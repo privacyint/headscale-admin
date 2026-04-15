@@ -124,15 +124,32 @@
 					{/each}
 				</select>
 				{#if deployment.preAuthKeyUser}
-					<div transition:slide>
-						<select bind:value={deployment.preAuthKey} class="input rounded-md">
+					<div transition:slide class="flex flex-col gap-2">
+						<div class="flex items-center gap-2 text-xs text-warning-500">
+							<span>⚠ Keys below are hashed — paste the full key copied at creation time.</span>
+						</div>
+						<select
+							class="input rounded-md"
+							onchange={(e) => {
+								const val = e.currentTarget.value;
+								if (val) {
+									deployment.preAuthKey = val;
+								}
+							}}
+						>
 							<option value=""
-								>{App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)).length} Valid Key(s)</option
+								>{App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)).length} Valid Key(s) — select to identify</option
 							>
 							{#each App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)) as preAuthKey}
-								<option value={preAuthKey.key}>{preAuthKey.key}</option>
+								<option value={preAuthKey.key}>{preAuthKey.key.substring(0, 10)}… (created {new Date(preAuthKey.createdAt).toLocaleDateString()})</option>
 							{/each}
 						</select>
+						<input
+							type="text"
+							class="input text-sm rounded-md font-mono"
+							placeholder="Paste full pre-auth key here"
+							bind:value={deployment.preAuthKey}
+						/>
 					</div>
 				{/if}
 			</div>

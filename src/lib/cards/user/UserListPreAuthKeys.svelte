@@ -10,6 +10,8 @@
 	import { debug } from '$lib/common/debug';
 	import CardSeparator from '../CardSeparator.svelte';
 	import { App } from '$lib/States.svelte';
+	import { getModalStore, type ModalSettings } from '@skeletonlabs/skeleton';
+	import PreAuthKeyModal from '$lib/parts/PreAuthKeyModal.svelte';
 
 	type UserListPreAuthKeysProps = {
 		user: User,
@@ -19,6 +21,8 @@
 		user = $bindable(),
 		title = 'PreAuth Keys:',
 	}: UserListPreAuthKeysProps = $props();
+
+	const ModalStore = getModalStore();
 
 	let hideInvalid = $state(true);
 
@@ -96,6 +100,11 @@
 										expires,
 									);
 									App.preAuthKeys.value.push(preAuthKey)
+									const modal: ModalSettings = {
+										type: 'component',
+										component: { ref: PreAuthKeyModal, props: { key: preAuthKey.key } },
+									};
+									ModalStore.trigger(modal);
 								} catch (e) {
 									debug(e);
 								} finally {
