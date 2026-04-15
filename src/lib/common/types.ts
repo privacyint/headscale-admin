@@ -133,23 +133,20 @@ export type Node = {
 	name: string;
 	user: User;
 	lastSeen: string | null;
-	lastSuccessfulUpdate: string | null;
 	expiry: string | null;
-	preAuthKey: string | null;
+	preAuthKey: PreAuthKey | null;
 	createdAt: string;
 	registerMethod:
 	| 'REGISTER_METHOD_UNSPECIFIED'
 	| 'REGISTER_METHOD_AUTH_KEY'
 	| 'REGISTER_METHOD_CLI'
 	| 'REGISTER_METHOD_OIDC';
-	forcedTags: string[];
-	invalidTags: string[];
-	validTags: string[];
 	givenName: string;
 	online: boolean;
 	approvedRoutes: string[];
 	availableRoutes: string[];
 	subnetRoutes: string[];
+	tags: string[];
 };
 
 export type ApiNodes = {
@@ -158,10 +155,6 @@ export type ApiNodes = {
 
 export type ApiNode = {
 	node: Node;
-};
-
-export type ApiMachine = {
-	machine: Node;
 };
 
 export type ApiKey = {

@@ -11,30 +11,10 @@ import type {
 import { debug } from '../debug';
 
 export async function getPreAuthKeys(
-	user_ids?: string[],
 	init?: RequestInit,
 ): Promise<PreAuthKey[]> {
-	if (user_ids == undefined) {
-		user_ids = (await getUsers(init)).map((u) => u.id);
-	}
-	const promises: Promise<ApiPreAuthKeys>[] = [];
-	let preAuthKeysAll: PreAuthKey[] = [];
-
-	user_ids.forEach(async (user_id: string) => {
-		if(user_id != ""){
-			promises.push(
-				apiGet<ApiPreAuthKeys>(API_URL_PREAUTHKEY + '?user=' + user_id, init),
-			);
-		}
-	});
-
-	promises.forEach(async (p) => {
-		const { preAuthKeys } = await p;
-		preAuthKeysAll = preAuthKeysAll.concat(preAuthKeys);
-	});
-
-	await Promise.all(promises);
-	return preAuthKeysAll;
+	const { preAuthKeys } = await apiGet<ApiPreAuthKeys>(API_URL_PREAUTHKEY, init);
+	return preAuthKeys;
 }
 
 type GetUserOptions = 
