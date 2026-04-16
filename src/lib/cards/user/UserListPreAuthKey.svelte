@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { PreAuthKey } from '$lib/common/types';
-	import RawMdiClipboard from '~icons/mdi/clipboard';
-	import { getToastStore, popup, type PopupSettings } from '@skeletonlabs/skeleton';
-	import { copyToClipboard } from '$lib/common/funcs';
+	import { getToastStore } from '@skeletonlabs/skeleton';
 	import Delete from '$lib/parts/Delete.svelte';
 	import { expirePreAuthKey, getPreAuthKeys } from '$lib/common/api';
 	import { App } from '$lib/States.svelte';
@@ -33,20 +31,17 @@
 
 <div class="flex flex-row items-start">
 	<div class="flex flex-col px-2 gap-2">
-		<button
-			class="font-mono flex items-center border-2 border-dashed w-auto py-1.5 px-2 mr-3 border-slate-300 dark:border-slate-700"
-			onclick={() => copyToClipboard(preAuthKey.key, toastStore)}
+		<span
+			class="font-mono flex items-center border-2 border-dashed w-auto py-1.5 px-2 mr-3 border-slate-300 dark:border-slate-700 text-surface-600-300-token"
+			title="Hashed — full key was shown at creation"
 		>
-			<span class="mr-2">
-				<RawMdiClipboard />
-			</span>
-			{preAuthKey.key.substring(0, 8)}
-		</button>
+			{preAuthKey.key.substring(0, 10)}…
+		</span>
 		<span class="mr-2 {isExpired(preAuthKey) && 'hidden'}">
 			<Delete
 				func={async () => {
 					await expirePreAuthKey(preAuthKey);
-					const keys = await getPreAuthKeys([preAuthKey.user.id]);
+					const keys = await getPreAuthKeys();
 					keys.forEach((pak) => {
 						App.updateValue(App.preAuthKeys, pak)
 					});
