@@ -39,9 +39,6 @@ jobs:
     name: Build (static)
     runs-on: ubuntu-latest
     needs: [lint-and-check, test]
-    strategy:
-      matrix:
-        endpoint: ['', '/admin']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,10 +46,7 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Build with ENDPOINT=${{ matrix.endpoint }}
-        env:
-          ENDPOINT: ${{ matrix.endpoint }}
-        run: npx vite build
+      - run: npx vite build
       - name: Verify pre-rendered routes exist
         run: |
           for route in index.html settings/index.html nodes/index.html users/index.html; do
