@@ -14,8 +14,7 @@
 		type DrawerSettings,
 	} from '@skeletonlabs/skeleton';
 
-	import { base } from '$app/paths';
-	import { goto } from '$app/navigation';
+	import ApiKeyPrompt from '$lib/parts/ApiKeyPrompt.svelte';
 
 	initializeStores();
 
@@ -54,16 +53,13 @@
 	onMount(() => {
 		setTheme(App.theme.value || 'skeleton')
 		App.populateAll(createPopulateErrorHandler(ToastStore), true)
-
-		if (!App.hasValidApi) {
-			goto(`${base}/settings`);
-		}
 	});
 </script>
 
 <Toast />
 <PageDrawer />
 <Modal />
+<ApiKeyPrompt />
 <AppShell slotSidebarLeft="w-0 mr-2 lg:w-48" scrollGutter="stable both-edges">
 	<svelte:fragment slot="header">
 		<!-- App Bar -->
