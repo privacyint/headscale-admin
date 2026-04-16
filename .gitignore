@@ -10,6 +10,10 @@ TRAEFIK
 .svelte-kit
 build/
 
+# Playwright
+test-results/
+playwright-report/
+
 # Logs
 logs
 *.log
