@@ -55,17 +55,19 @@ jobs:
         run: npx vite build
       - name: Verify pre-rendered routes exist
         run: |
+          endpoint="${{ matrix.endpoint }}"
+          endpoint="${endpoint#/}"
+          prefix="build/${endpoint:+${endpoint}/}"
           for route in index.html settings/index.html nodes/index.html users/index.html; do
-            path="build/${{ matrix.endpoint }}${route}"
-            # strip leading slash if ENDPOINT is empty
-            path="${path#/}"
+            path="${prefix}${route}"
             test -f "$path" || { echo "MISSING: $path"; exit 1; }
             echo "OK: $path"
           done
       - name: Verify SPA fallback exists
         run: |
-          fallback="build/${{ matrix.endpoint }}200.html"
-          fallback="${fallback#/}"
+          endpoint="${{ matrix.endpoint }}"
+          endpoint="${endpoint#/}"
+          fallback="build/${endpoint:+${endpoint}/}200.html"
           test -f "$fallback" || { echo "MISSING: $fallback"; exit 1; }
           echo "OK: $fallback"
 
