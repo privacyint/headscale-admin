@@ -161,6 +161,11 @@ const server = createServer((req, res) => {
     return cors(res);
   }
 
+  // Health check — used by CI readiness probe
+  if (path === '/healthz') {
+    return json(res, { status: 'ok' });
+  }
+
   // Auth check
   if (!isAuthorised(req)) {
     return unauthorized(res);
