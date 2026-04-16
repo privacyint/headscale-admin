@@ -12,4 +12,7 @@ export default defineConfig({
 			compiler: 'svelte',
 		}),
 	],
+	test: {
+		exclude: ['e2e/**', 'node_modules/**'],
+	},
 });
