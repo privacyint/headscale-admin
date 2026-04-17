@@ -78,7 +78,7 @@ export type ApiPreAuthKey = {
 
 export class PreAuthKey {
 	constructor(
-		public user: User,
+		public user: User | null,
 		public id: string,
 		public key: string,
 		public reusable: boolean,
@@ -196,7 +196,7 @@ export type Deployment = {
 	forceReauth: boolean;
 	sshServer: boolean;
 	usePreAuthKey: boolean;
-	preAuthKeyUser: string;
+	preAuthKeyUser: string | null;
 	preAuthKey: string;
 	unattended: boolean;
 	// advertise

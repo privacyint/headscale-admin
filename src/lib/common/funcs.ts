@@ -3,7 +3,7 @@ import type { DrawerSettings } from '@skeletonlabs/skeleton';
 import IPAddr from 'ipaddr.js';
 import { debug } from './debug';
 import DOMPurify from 'dompurify';
-import type { Direction, Node, OnlineStatus, Tag, User } from './types';
+import type { Direction, Node, OnlineStatus, Tag, User, PreAuthKey } from './types';
 import { App } from '$lib/States.svelte';
 
 export function clone<T>(item: T): T {
@@ -506,6 +506,37 @@ export function getSortedTags(tags: Tag[], sortMethod: string, sortDirection: Di
 		return tags.reverse();
 	}
 	return tags;
+}
+
+export function filterPreAuthKey(preAuthKey: PreAuthKey, filterString: string): boolean {
+	if (filterString === '') {
+		return true;
+	}
+
+	try {
+		const r = RegExp(filterString);
+		return (
+			r.test(preAuthKey.id) ||
+			r.test(preAuthKey.user?.name || '') ||
+			r.test(preAuthKey.key) ||
+			r.test(preAuthKey.aclTags.join(' '))
+		);
+	} catch (err) {
+		return true;
+	}
+}
+
+export function getSortedFilteredPreAuthKeys(
+	preAuthKeys: PreAuthKey[],
+	filterString: string,
+	sortMethod: string,
+	sortDirection: Direction,
+): PreAuthKey[] {
+	return getSortedPreAuthKeys(
+		preAuthKeys.filter((preAuthKey) => filterPreAuthKey(preAuthKey, filterString)),
+		sortMethod,
+		sortDirection,
+	);
 }
 
 export function getSortedFilteredTags(

@@ -7,21 +7,25 @@
 		toastError,
 		toastSuccess,
 	} from '$lib/common/funcs';
+	import { createPreAuthKey } from '$lib/common/api';
 	import DeployCheck from './DeployCheck.svelte';
 	import Page from '$lib/page/Page.svelte';
 	import PageHeader from '$lib/page/PageHeader.svelte';
 	import type { Deployment, PreAuthKey } from '$lib/common/types';
-	import { InputChip, getToastStore } from '@skeletonlabs/skeleton';
+	import { InputChip, getToastStore, getModalStore, type ModalSettings } from '@skeletonlabs/skeleton';
+	import PreAuthKeyModal from '$lib/parts/PreAuthKeyModal.svelte';
 	import { page } from '$app/state';
 	import { slide } from 'svelte/transition';
 
 	import { App } from '$lib/States.svelte';
 
 	const ToastStore = getToastStore();
+	const ModalStore = getModalStore();
 
-	function createFilter(user_id: string) {
+	function createFilter(user_id: string | null) {
 		return (pak: PreAuthKey) => {
-			return pak.user.id === user_id && !(pak.used && !pak.reusable) && !isExpired(pak.expiration);
+			const userMatches = user_id === null ? pak.user === null : pak.user?.id === user_id;
+			return userMatches && !(pak.used && !pak.reusable) && !isExpired(pak.expiration);
 		};
 	}
 
@@ -61,6 +65,32 @@
 		d.acceptExitNode && d.acceptExitNodeValue && cmd.push('--exit-node=' + d.acceptExitNodeValue);
 		return cmd.join(' ');
 	};
+
+	async function createNewPreAuthKey() {
+		if (deployment.preAuthKeyUser === undefined) {
+			toastError('Please select a user or Global first', ToastStore);
+			return;
+		}
+
+		try {
+			const user = deployment.preAuthKeyUser === null ? null : App.users.value.find(u => u.id === deployment.preAuthKeyUser);
+			const preAuthKey = await createPreAuthKey(user, false, false, new Date(Date.now() + 24 * 60 * 60 * 1000)); // 24 hours from now
+			App.preAuthKeys.value.push(preAuthKey);
+			deployment.preAuthKey = preAuthKey.key;
+
+			const modal: ModalSettings = {
+				type: 'component',
+				component: { ref: PreAuthKeyModal, props: { key: preAuthKey.key } },
+			};
+			ModalStore.trigger(modal);
+
+			toastSuccess('Created new PreAuth key', ToastStore);
+		} catch (error) {
+			if (error instanceof Error) {
+				toastError('Failed to create PreAuth key', ToastStore, error);
+			}
+		}
+	}
 </script>
 
 <Page>
@@ -117,13 +147,22 @@
 			help="A generated key to automatically authenticate the node for a given user"
 		>
 			<div class="flex flex-col gap-2">
-				<select bind:value={deployment.preAuthKeyUser} class="input rounded-md">
-					<option value=""></option>
-					{#each App.users.value as user}
-						<option value={user.id}>{user.name}</option>
-					{/each}
-				</select>
-				{#if deployment.preAuthKeyUser}
+				<div class="flex gap-2">
+					<select bind:value={deployment.preAuthKeyUser} class="input rounded-md flex-1">
+						<option value={null}>Global</option>
+						{#each App.users.value as user}
+							<option value={user.id}>{user.name}</option>
+						{/each}
+					</select>
+					<button
+						class="btn btn-sm variant-filled-primary"
+						onclick={createNewPreAuthKey}
+						disabled={deployment.preAuthKeyUser === undefined}
+					>
+						Create New
+					</button>
+				</div>
+				{#if deployment.preAuthKeyUser !== undefined}
 					<div transition:slide class="flex flex-col gap-2">
 						<div class="flex items-center gap-2 text-xs text-warning-500">
 							<span>⚠ Keys below are hashed — paste the full key copied at creation time.</span>

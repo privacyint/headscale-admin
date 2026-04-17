@@ -137,6 +137,7 @@ export class HeadscaleAdmin {
     layoutNode = new StateLocal<LayoutStyle>('layoutNode', 'list');
     layoutTag = new StateLocal<LayoutStyle>('layoutTag', 'list');
     layoutRoute = new StateLocal<LayoutStyle>('layoutRoute', 'list');
+    layoutPreauth = new StateLocal<LayoutStyle>('layoutPreauth', 'list');
 
     toggleLayoutUser() {
         this.layoutUser.value = toggledLayout(this.layoutUser.value)
@@ -144,6 +145,10 @@ export class HeadscaleAdmin {
 
     toggleLayoutNode() {
         this.layoutNode.value = toggledLayout(this.layoutNode.value)
+    }
+
+    toggleLayoutPreauth() {
+        this.layoutPreauth.value = toggledLayout(this.layoutPreauth.value)
     }
 
     // deployments
@@ -157,7 +162,7 @@ export class HeadscaleAdmin {
         forceReauth: false,
         sshServer: false,
         usePreAuthKey: false,
-        preAuthKeyUser: '',
+        preAuthKeyUser: null,
         preAuthKey: '',
         unattended: false,
         // advertise

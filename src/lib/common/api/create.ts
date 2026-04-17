@@ -38,18 +38,20 @@ export async function createNode(key: string, username: string): Promise<Node> {
 }
 
 export async function createPreAuthKey(
-	user: User,
+	user: User | null,
 	ephemeral: boolean,
 	reusable: boolean,
 	expiration: Date | string,
 ) {
-	const data = {
-		user: user.id,
+	const data: any = {
 		reusable,
 		ephemeral,
 		expiration: new Date(expiration).toISOString(),
 	};
+	if (user) {
+		data.user = user.id;
+	}
 	const { preAuthKey } = await apiPost<ApiPreAuthKey>(API_URL_PREAUTHKEY, data);
-	debug('Created PreAuthKey for user "' + user.name + '"');
+	debug('Created PreAuthKey' + (user ? ' for user "' + user.name + '"' : ''));
 	return preAuthKey;
 }
