@@ -1,5 +1,5 @@
 :{$PORT:80}
 root * /app
 encode gzip zstd
-try_files {path}.html {path}
+try_files {path}.html {path} {path}/index.html {$ENDPOINT:/}/200.html
 file_server

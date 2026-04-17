@@ -10,6 +10,18 @@ headscale-admin is still in active development and will evolve in tandem with he
 
 - No known issues at this time.
 
+### Authentication Flow
+
+When headscale-admin is opened without stored API credentials, a login
+prompt is shown as a modal overlay on top of whichever page was requested.
+After entering valid credentials the modal dismisses and the user remains on
+the original page — there is no redirect.
+
+Credentials are stored in the browser's `localStorage` and can be changed at
+any time from the **Settings** page.  If the stored key becomes invalid
+during a session, a toast notification appears and the user can navigate to
+Settings to correct it.
+
 ### Securing headscale-admin
 
 Please note that headscale-admin is an entirely stateless application. The static files hosted on a server do not perform any interaction with the headscale API or backend. headscale-admin only provides the application scaffolding which facilitates interactions from the client's browser to the headscale API. There are no sessions, API tokens, or any other sensitive information passed to or from the web server hosting headscale-admin. For this reason, security beyond SSL certificates is unnecessary, though you may choose to do so simply for the sake of hiding the application. Any static headscale UI offers functionality that can be trivially replicated with cURL or other web request utilities. **The security of headscale lies in your API token being securely preserved.** That said, here are some common recommendations:

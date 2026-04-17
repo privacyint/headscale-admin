@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-check:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx svelte-kit sync
+      - run: npx svelte-check --tsconfig ./tsconfig.json
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run
+
+  build:
+    name: Build (static)
+    runs-on: ubuntu-latest
+    needs: [lint-and-check, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx vite build
+      - name: Verify pre-rendered routes exist
+        run: |
+          for route in index.html settings/index.html nodes/index.html users/index.html; do
+            test -f "build/${route}" || { echo "MISSING: build/${route}"; exit 1; }
+            echo "OK: build/${route}"
+          done
+      - name: Verify SPA fallback exists
+        run: |
+          test -f "build/200.html" || { echo "MISSING: build/200.html"; exit 1; }
+          echo "OK: build/200.html"
+
+  docker-build:
+    name: Docker build (smoke test)
+    runs-on: ubuntu-latest
+    needs: [lint-and-check, test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t headscale-admin:ci .
+      - name: Verify Caddy serves routes
+        run: |
+          docker run -d --name ha-ci -p 8080:80 headscale-admin:ci
+          sleep 2
+          for path in /admin/ /admin/nodes/ /admin/settings/ /admin/users/ /admin/nonexistent/; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080${path}")
+            if [ "$status" != "200" ]; then
+              echo "FAIL: $path returned $status"
+              docker logs ha-ci
+              exit 1
+            fi
+            echo "OK: $path → $status"
+          done
+          docker rm -f ha-ci
+
+  e2e:
+    name: E2E tests (dev server)
+    runs-on: ubuntu-latest
+    needs: [lint-and-check, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: npx playwright test
+
+  e2e-docker:
+    name: E2E tests (production Docker)
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - name: Build Docker image
+        run: docker build -t headscale-admin:e2e .
+      - name: Start container and mock API
+        run: |
+          docker run -d --name ha-e2e -p 8080:80 headscale-admin:e2e
+          node e2e/mock-api.mjs &
+          echo $! > /tmp/mock-api.pid
+          # Wait for both services to be ready (up to 30s)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/admin/ > /dev/null && \
+               curl -sf http://localhost:8081/healthz > /dev/null 2>&1; then
+              echo "Services ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          # Verify the container is up even without a /healthz on mock
+          curl -sf http://localhost:8080/admin/ || { echo "Container not ready"; docker logs ha-e2e; exit 1; }
+      - name: Run E2E tests against production build
+        run: npx playwright test --config playwright.docker.config.ts
+        env:
+          CI: true
+      - name: Cleanup
+        if: always()
+        run: |
+          kill $(cat /tmp/mock-api.pid) 2>/dev/null || true
+          docker rm -f ha-e2e 2>/dev/null || true

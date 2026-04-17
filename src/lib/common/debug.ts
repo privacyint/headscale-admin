@@ -1,6 +1,6 @@
 import { App } from "$lib/States.svelte";
 
-export const version = '0.28.0-pi-yolobuild-alpha1';
+export const version = '0.28.0/update3';
 
 export function debug(...data: unknown[]) {
 	// output if console debugging is enabled
