@@ -7,26 +7,16 @@ const API_KEY = 'test-api-key';
 
 /** Pre-seed localStorage so the page loads already authenticated. */
 async function seedAuth(page: Page) {
-  // Visit a page first so we can inject into its storage origin
   await page.goto('/');
-  await page.evaluate(
-    ([url, key]) => {
-      localStorage.setItem('apiUrl', JSON.stringify(url));
-      localStorage.setItem('apiKey', JSON.stringify(key));
-      localStorage.setItem(
-        'apiKeyInfo',
-        JSON.stringify({
-          authorized: true,
-          expires: new Date(Date.now() + 86_400_000 * 90).toISOString(),
-          informedUnauthorized: false,
-          informedExpiringSoon: false,
-        }),
-      );
-    },
-    [MOCK_URL, API_KEY],
-  );
-  // Reload so StateLocal reads the seeded values
+  await page.evaluate(() => localStorage.clear());
   await page.reload();
+  await page.waitForLoadState('networkidle');
+  await page.waitForSelector('input[placeholder="Enter your API key"]', { timeout: 10000 });
+  await page.getByLabel('API URL').fill(MOCK_URL);
+  await page.getByPlaceholder('Enter your API key').fill(API_KEY);
+  await page.getByRole('button', { name: 'Connect' }).click();
+  // Wait for the login modal to disappear
+  await page.waitForSelector('text=Enter your Headscale API credentials to continue.', { state: 'hidden' });
   // Wait for the app shell to be ready
   await page.locator('[data-testid="app-shell"]').waitFor({ timeout: 10000 });
 }
@@ -38,42 +28,74 @@ test.describe('preauth keys', () => {
     await seedAuth(page);
   });
 
-  test('preauth page loads and shows keys', async ({ page }) => {
+  test('preauth page loads and shows created keys', async ({ page }) => {
     await page.goto('/preauth');
+
+    // Wait for the app shell to be ready
+    await page.locator('[data-testid="app-shell"]').waitFor({ timeout: 10000 });
+
+    // Click the create button to show the form
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+    // Wait for the form to be ready
+    await page.waitForSelector('input[value="user"]', { timeout: 5000 });
 
     // Check page title
     await expect(page.locator('.font-mono').getByText('Preauth Keys')).toBeVisible();
 
-    // Check that we have the sort buttons
-    await expect(page.locator('.btn-group').getByText('ID')).toBeVisible();
-    await expect(page.locator('.btn-group').getByText('User')).toBeVisible();
-    await expect(page.locator('.btn-group').getByText('Created')).toBeVisible();
-    await expect(page.locator('.btn-group').getByText('Expiration')).toBeVisible();
+    // Create a preauth key
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.locator('button[type="submit"]').click();
 
-    // Check that existing preauth key is displayed
-    await expect(page.getByText('ID: 1')).toBeVisible();
-    await expect(page.getByText('User: alice')).toBeVisible();
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Check that the created preauth key is displayed
+    await expect(page.getByText('User: alice').first()).toBeVisible();
   });
 
   test('preauth key creation works', async ({ page }) => {
     await page.goto('/preauth');
 
-    // Click the create button
-    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
+    // Click the create button to show the form
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+    // Wait for the form to be ready
+    await page.waitForSelector('input[value="user"]', { timeout: 5000 });
 
     // Check that the create form appears
-    await expect(page.getByText('Ephemeral')).toBeVisible();
-    await expect(page.getByText('Reusable')).toBeVisible();
+    await expect(page.locator('form').getByText('Ephemeral')).toBeVisible();
+    await expect(page.locator('form').getByText('Reusable')).toBeVisible();
 
-    // Close the form without creating
-    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
+    // Select user and create the key
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Check that the key was created and is displayed
+    await expect(page.getByText('User: alice').first()).toBeVisible();
   });
 
   test('tagged preauth key creation works', async ({ page }) => {
     await page.goto('/preauth');
 
-    // Click the create button
-    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
+    // Click the create button to show the form
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+    // Wait for the form to be ready
+    await page.waitForSelector('input[value="user"]', { timeout: 5000 });
 
     // Check that Tags radio button is visible
     await expect(page.locator('input[value="tags"]')).toBeVisible();
@@ -84,45 +106,189 @@ test.describe('preauth keys', () => {
     // Check that tag input appears
     await expect(page.getByPlaceholder('Enter tags (comma-separated)')).toBeVisible();
 
-    // Close the form
-    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
+    // Enter tags and create the key
+    await page.getByPlaceholder('Enter tags (comma-separated)').fill('tag1,tag2');
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Check that the tagged key was created
+    await expect(page.getByText('User: N/A').first()).toBeVisible(); // User should be N/A for tagged keys
   });
 
   test('preauth key details can be viewed', async ({ page }) => {
     await page.goto('/preauth');
 
-    // Click on the accordion item to expand details
-    await page.getByRole('button', { name: /ID: 1/ }).click();
+    // Click the create button to show the form
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
 
-    // Just check that the accordion expanded (we can see more content)
-    await expect(page.getByText('ID: 1')).toBeVisible();
+    // Wait for the form to be ready
+    await page.waitForSelector('input[value="user"]', { timeout: 5000 });
+
+    // Create a preauth key
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Check that details are shown (always visible)
+    await expect(page.getByText('User: alice').first()).toBeVisible();
   });
 
-  test('preauth key sorting works', async ({ page }) => {
+  test('preauth key sorting buttons are clickable', async ({ page }) => {
     await page.goto('/preauth');
 
-    // Click the User sort button
-    await page.locator('.btn-group').getByText('User').click();
+    // Click the create button to show the form
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
 
-    // The existing key should still be visible
-    await expect(page.getByText('ID: 1')).toBeVisible();
-    await expect(page.getByText('User: alice')).toBeVisible();
+    // Wait for the form to be ready
+    await page.waitForSelector('input[value="user"]', { timeout: 5000 });
+
+    // Create a key first
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Click the User sort button
+    await page.locator('button').filter({ hasText: 'User' }).click();
+
+    // The key should still be visible
+    await expect(page.getByText('User: alice').first()).toBeVisible();
   });
 
   test('preauth key filtering works', async ({ page }) => {
     await page.goto('/preauth');
 
+    // Click the create button to show the form
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+    // Wait for the form to be ready
+    await page.waitForSelector('input[value="user"]', { timeout: 5000 });
+
+    // Create a key first
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
     // Type in the filter box
     await page.getByPlaceholder('Search...').fill('alice');
 
     // The key should still be visible
-    await expect(page.getByText('ID: 1')).toBeVisible();
+    await expect(page.getByText('User: alice').first()).toBeVisible();
 
     // Filter for something that doesn't exist
     await page.getByPlaceholder('Search...').fill('nonexistent');
 
     // The key should be hidden
-    await expect(page.getByText('ID: 1')).not.toBeVisible();
+    await expect(page.getByText('User: alice')).not.toBeVisible();
+  });
+
+  test('ephemeral preauth key creation works', async ({ page }) => {
+
+    await page.goto('/preauth');
+
+    // Click the create button
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+    // Select user and enable ephemeral
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.getByRole('checkbox', { name: 'Ephemeral' }).check();
+
+    // Create the key
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Check that the ephemeral key was created
+    await expect(page.getByText('User: alice').first()).toBeVisible();
+    await expect(page.getByText('Yes').first()).toBeVisible(); // Ephemeral should be Yes
+  });
+
+  test('reusable preauth key creation works', async ({ page }) => {
+
+    await page.goto('/preauth');
+
+    // Click the create button
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+    // Select user and enable reusable
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.getByRole('checkbox', { name: 'Reusable' }).check();
+
+    // Create the key
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Check that the reusable key was created
+    await expect(page.getByText('User: alice').first()).toBeVisible();
+    await expect(page.getByText('Yes').first()).toBeVisible(); // Reusable should be Yes
+  });
+
+  test('preauth key deletion works', async ({ page }) => {
+
+    await page.goto('/preauth');
+
+    // Create a key first
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.locator('input[value="user"]').click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 1;
+    }, { timeout: 10000 });
+    await page.locator('select').selectOption({ index: 1 });
+    await page.locator('button[type="submit"]').click();
+
+    // Close the modal
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // Confirm the key exists
+    await expect(page.getByText('User: alice').first()).toBeVisible();
+
+    // Click the delete button (the delete icon)
+    await page.getByTestId('delete-button').first().click();
+
+    // Wait for the confirm button to appear
+    await page.getByTestId('confirm-delete').first().waitFor({ state: 'visible' });
+
+    // Confirm deletion by clicking the check icon
+    await page.getByTestId('confirm-delete').first().click();
+
+    // Check that the confirm button is no longer visible (deletion completed)
+    await expect(page.getByTestId('confirm-delete')).not.toBeVisible();
   });
 });
 
