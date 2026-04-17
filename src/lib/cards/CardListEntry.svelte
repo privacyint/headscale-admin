@@ -10,6 +10,7 @@
 		childTitle?: Snippet,
 		childBottom?: Snippet,
 		children?: Snippet,
+		onclick?: () => void,
 	}
 	let {
 		title = undefined,
@@ -20,11 +21,12 @@
 		childTitle = undefined,
 		childBottom = undefined,
 		children = undefined,
+		onclick = undefined,
 	}: CardListEntryProps = $props()
 </script>
 
 <div class="grid py-0 grid-cols-12">
-	<div class="grid grid-cols-12 col-span-12 justify-between {top ? 'items-top' : 'items-center'}">
+	<div class="grid grid-cols-12 col-span-12 justify-between {top ? 'items-top' : 'items-center'}" {onclick}>
 		<!-- Left-aligned title -->
 		<div class="grid col-span-5 {titleClasses}">
 			{#if title !== undefined}

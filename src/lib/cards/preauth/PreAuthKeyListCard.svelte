@@ -9,15 +9,17 @@
 		open?: boolean,
 	}
 
-	let { preAuthKey = $bindable(), open = $bindable(true) }: PreAuthKeyListCardProps = $props()
+	let { preAuthKey = $bindable(), open = $bindable(false) }: PreAuthKeyListCardProps = $props()
 
 </script>
 
 <div class="backdrop-blur-xl backdrop-brightness-100 bg-white/25 dark:bg-white/5 rounded-md p-4">
 	<div class="grid">
-		<CardListEntry title="ID: {preAuthKey.id}">
+		<CardListEntry title="ID: {preAuthKey.id}" onclick={() => open = !open}>
 			<span class="font-bold">User: {preAuthKey.user?.name || 'N/A'}</span>
 		</CardListEntry>
 	</div>
-	<PreAuthKeyInfo {preAuthKey} />
+	{#if open}
+		<PreAuthKeyInfo {preAuthKey} />
+	{/if}
 </div>
