@@ -1,7 +1,7 @@
 ARG ENDPOINT=/admin
 ARG PORT=80
 
-FROM node:20-alpine AS build
+FROM node:25-alpine AS build
 ARG ENDPOINT
 ENV ENDPOINT=$ENDPOINT
 

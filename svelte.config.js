@@ -18,7 +18,7 @@ const config = {
 			fallback: '200.html',
 		}),
 		csrf: {
-			checkOrigin: false,
+			trustedOrigins: ['*'],
 		},
 		paths: {
 			base: process.env.ENDPOINT,
