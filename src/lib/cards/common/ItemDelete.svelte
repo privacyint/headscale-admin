@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { ItemTypeName, Named } from '$lib/common/types';
+	import type { ItemTypeName, Named, PreAuthKey } from '$lib/common/types';
 	import { getTypeName, isUser, isNode } from '$lib/common/types';
 
 	import CardListEntry from '../CardListEntry.svelte';
 
-	import { deleteNode, deleteUser } from '$lib/common/api';
+	import { deleteNode, deleteUser, deletePreAuthKey } from '$lib/common/api';
 	import { getDrawerStore, getToastStore } from '@skeletonlabs/skeleton';
 	import { toastError, toastSuccess } from '$lib/common/funcs';
 	import Delete from '$lib/parts/Delete.svelte';
@@ -49,6 +49,14 @@
 				DrawerStore.close()
 			} else {
 				toastError(`Failed to Delete Nachine "${name}" (${id})`, ToastStore);
+			}
+		}
+		if ('key' in item) {
+			if (await deletePreAuthKey(item as PreAuthKey)) {
+				toastSuccess(`Deleted PreAuth Key "${name}" (${id})`, ToastStore);
+				DrawerStore.close()
+			} else {
+				toastError(`Failed to Delete PreAuth Key "${name}" (${id})`, ToastStore);
 			}
 		}
 	}

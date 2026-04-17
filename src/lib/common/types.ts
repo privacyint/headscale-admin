@@ -57,6 +57,10 @@ export function getTypeName(item: Named): ItemTypeName {
 	if (isUser(item)) {
 		return 'user';
 	}
+	if ('key' in item) {
+		// PreAuthKey
+		return getPreAuthKeyType(item as PreAuthKey) === 'user' ? 'user' : 'tag';
+	}
 	throw new Error('Item Provided is an Invalid Type');
 }
 
@@ -76,9 +80,9 @@ export type ApiPreAuthKey = {
 	preAuthKey: PreAuthKey;
 };
 
-export class PreAuthKey {
+export class PreAuthKey implements Named {
 	constructor(
-		public user: User,
+		public user: User | null,
 		public id: string,
 		public key: string,
 		public reusable: boolean,
@@ -91,6 +95,24 @@ export class PreAuthKey {
 	isExpired: () => boolean = () => {
 		return new Date() > new Date(this.expiration);
 	};
+
+	get name(): string {
+		if (this.user) {
+			return `${this.user.name} PreAuth Key`;
+		} else if (this.aclTags.length > 0) {
+			return `Tagged PreAuth Key (${this.aclTags.join(', ')})`;
+		} else {
+			return 'PreAuth Key';
+		}
+	}
+}
+
+export function getPreAuthKeyType(key: PreAuthKey): 'user' | 'tag' {
+	if (key.user) {
+		return 'user';
+	} else {
+		return 'tag';
+	}
 }
 
 export class PreAuthKeys {
