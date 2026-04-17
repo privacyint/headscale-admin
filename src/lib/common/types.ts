@@ -91,6 +91,10 @@ export class PreAuthKey {
 	isExpired: () => boolean = () => {
 		return new Date() > new Date(this.expiration);
 	};
+
+	get name(): string {
+		return this.user ? `${this.user.name} PreAuth Key` : `Global PreAuth Key`;
+	}
 }
 
 export class PreAuthKeys {
