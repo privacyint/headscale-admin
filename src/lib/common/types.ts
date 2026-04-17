@@ -5,7 +5,7 @@ export interface Named {
 	givenName?: string;
 }
 
-export type ItemTypeName = 'user' | 'node';
+export type ItemTypeName = 'user' | 'node' | 'tag';
 
 export type User = {
 	id: string;
@@ -155,6 +155,11 @@ export type ApiNodes = {
 
 export type ApiNode = {
 	node: Node;
+};
+
+export type Tag = {
+	name: string;
+	nodes: Node[];
 };
 
 export type ApiKey = {

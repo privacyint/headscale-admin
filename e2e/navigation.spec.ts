@@ -89,6 +89,11 @@ test.describe('unauthenticated', () => {
     await expect(page.getByRole('button', { name: /connect/i })).toBeVisible();
   });
 
+  test('prompt appears on /tags/', async ({ page }) => {
+    await page.goto('/tags/');
+    await expect(page.getByRole('textbox', { name: 'API Key' })).toBeVisible();
+  });
+
   test('invalid API key shows error', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('textbox', { name: 'API URL' }).fill(MOCK_URL);
@@ -169,6 +174,13 @@ test.describe('authenticated navigation', () => {
     await page.goto('/routes/');
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({ timeout: 10000 });
   });
+
+  test('/tags/ renders tags page with tag data', async ({ page }) => {
+    await page.goto('/tags/');
+    await expect(page.locator('.font-mono').getByText('Tags')).toBeVisible({ timeout: 10000 });
+    // bob-server has tag:server, infra-gateway has tag:server + tag:infra
+    await expect(page.getByText('tag:server')).toBeVisible({ timeout: 10000 });
+  });
 });
 
 // ── 4. Refresh behaviour ─────────────────────────────────────────────────────
@@ -199,6 +211,14 @@ test.describe('refresh', () => {
     await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
     await page.reload();
     await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+  });
+
+  test('refreshing /tags/ keeps you on tags page', async ({ page }) => {
+    await page.goto('/tags/');
+    await expect(page.getByText('tag:server')).toBeVisible({ timeout: 10000 });
+    await page.reload();
+    await expect(page).toHaveURL(/\/tags\/?/);
+    await expect(page.getByText('tag:server')).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -242,7 +262,7 @@ test.describe('direct URL access (no white screen)', () => {
     await seedAuth(page);
   });
 
-  const routes = ['/', '/nodes/', '/users/', '/settings/', '/deploy/', '/routes/', '/acls/'];
+  const routes = ['/', '/nodes/', '/users/', '/tags/', '/settings/', '/deploy/', '/routes/', '/acls/'];
 
   for (const route of routes) {
     test(`${route} renders content (not blank)`, async ({ page }) => {

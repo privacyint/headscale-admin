@@ -85,6 +85,26 @@ const nodes = [
     subnetRoutes: [],
     tags: ['tag:server'],
   },
+  {
+    id: '3',
+    machineKey: 'mkey:jkl111',
+    nodeKey: 'nodekey:mno222',
+    discoKey: 'discokey:pqr333',
+    ipAddresses: ['100.64.0.3', 'fd7a:115c:a1e0::3'],
+    name: 'infra-gateway',
+    user: users[0],
+    lastSeen: new Date().toISOString(),
+    expiry: '0001-01-01T00:00:00Z',
+    preAuthKey: null,
+    createdAt: '2025-03-10T00:00:00Z',
+    registerMethod: 'REGISTER_METHOD_AUTH_KEY',
+    givenName: 'infra-gateway',
+    online: true,
+    approvedRoutes: [],
+    availableRoutes: [],
+    subnetRoutes: [],
+    tags: ['tag:server', 'tag:infra'],
+  },
 ];
 
 const preAuthKeys = [

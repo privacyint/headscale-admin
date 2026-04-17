@@ -3,7 +3,7 @@ import type { DrawerSettings } from '@skeletonlabs/skeleton';
 import IPAddr from 'ipaddr.js';
 import { debug } from './debug';
 import DOMPurify from 'dompurify';
-import type { Direction, Node, OnlineStatus, User } from './types';
+import type { Direction, Node, OnlineStatus, Tag, User } from './types';
 import { App } from '$lib/States.svelte';
 
 export function clone<T>(item: T): T {
@@ -448,4 +448,76 @@ export function getSortedFilteredNodes(
 		})
 	}
 	return nodesSortedFiltered
+}
+
+export function getTagsFromNodes(nodes: Node[]): Tag[] {
+	const tagMap = new Map<string, Node[]>();
+	for (const node of nodes) {
+		for (const tag of node.tags) {
+			const tagName = tag.startsWith('tag:') ? tag : 'tag:' + tag;
+			if (!tagMap.has(tagName)) {
+				tagMap.set(tagName, []);
+			}
+			tagMap.get(tagName)!.push(node);
+		}
+	}
+	return Array.from(tagMap.entries()).map(([name, nodes]) => ({ name, nodes }));
+}
+
+export function filterTag(tag: Tag, filterString: string, onlineStatus: OnlineStatus = 'all'): boolean {
+	if (onlineStatus === 'online' && !tag.nodes.some((n) => n.online)) {
+		return false;
+	}
+	if (onlineStatus === 'offline' && tag.nodes.some((n) => n.online)) {
+		return false;
+	}
+
+	if (filterString === '') {
+		return true;
+	}
+
+	try {
+		const r = RegExp(filterString);
+		const shortName = tag.name.startsWith('tag:') ? tag.name.substring(4) : tag.name;
+		return (
+			r.test(tag.name) ||
+			r.test(shortName) ||
+			tag.nodes.some((n) => r.test(n.givenName) || r.test(n.name))
+		);
+	} catch (err) {
+		return true;
+	}
+}
+
+export function getSortedTags(tags: Tag[], sortMethod: string, sortDirection: Direction): Tag[] {
+	if (sortMethod === 'name') {
+		tags = tags.sort((a: Tag, b: Tag) => {
+			if (a.name < b.name) return -1;
+			if (a.name > b.name) return 1;
+			return 0;
+		});
+	}
+	if (sortMethod === 'nodes') {
+		tags = tags.sort((a: Tag, b: Tag) => {
+			return a.nodes.length - b.nodes.length;
+		});
+	}
+	if (sortDirection === 'down') {
+		return tags.reverse();
+	}
+	return tags;
+}
+
+export function getSortedFilteredTags(
+	tags: Tag[],
+	filterString: string,
+	sortMethod: string,
+	sortDirection: Direction,
+	onlineStatus: OnlineStatus,
+) {
+	return getSortedTags(
+		tags.filter((tag) => filterTag(tag, filterString, onlineStatus)),
+		sortMethod,
+		sortDirection,
+	);
 }
