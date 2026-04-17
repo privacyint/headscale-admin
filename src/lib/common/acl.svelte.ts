@@ -5,7 +5,7 @@ import type { ToastStore } from '@skeletonlabs/skeleton'
 import { debug } from './debug'
 
 export type TagOwners = string[]
-export type TagOwnersTyped = { users: string[], groups: string[] }
+export type TagOwnersTyped = { users: string[], groups: string[], tags: string[] }
 
 export type AclGroups = { [key: string]: string[] }
 export type AclTagOwners = { [key: string]: TagOwners }
@@ -309,7 +309,7 @@ export class ACLBuilder implements ACL {
      * setTagOwners(name, members[])
      * getTagNames() string[]
      * getTagOwners(name) [string, string[]]
-     * getTagOwnersTyped(name) {users: string[], groups: string[]}
+     * getTagOwnersTyped(name) {users: string[], groups: string[], tags: string[]}
      * tagExists(name)
      * deleteTag(name)
      */
@@ -378,12 +378,15 @@ export class ACLBuilder implements ACL {
         const ownersTyped: TagOwnersTyped = {
             users: [],
             groups: [],
+            tags: [],
         }
 
         for (const owner of owners) {
             const prefix = ACLBuilder.getPrefix(owner)
             if (prefix === 'group') {
                 ownersTyped.groups.push(owner)
+            } else if (prefix === 'tag') {
+                ownersTyped.tags.push(owner)
             } else {
                 ownersTyped.users.push(owner)
             }

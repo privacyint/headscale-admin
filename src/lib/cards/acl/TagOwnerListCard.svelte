@@ -40,7 +40,10 @@
 		const gs = acl.getGroupNames(true)
 		gs.sort()
 
-		return us.concat(gs)
+		const ts = acl.getTagNames(true)
+		ts.sort()
+
+		return us.concat(gs).concat(ts)
 	});
 
 	function MakeTag() {
