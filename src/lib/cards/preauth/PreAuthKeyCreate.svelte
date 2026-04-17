@@ -82,6 +82,7 @@
 	}
 </script>
 
+{#if show}
 <div class="flex w-full">
 	<form onsubmit={newPreAuthKey} class="w-full flex flex-col space-y-4">
 		<div class="flex flex-row space-x-4">
@@ -165,3 +166,4 @@
 		</div>
 	</form>
 </div>
+{/if}

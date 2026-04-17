@@ -80,7 +80,7 @@ export type ApiPreAuthKey = {
 	preAuthKey: PreAuthKey;
 };
 
-export class PreAuthKey {
+export class PreAuthKey implements Named {
 	constructor(
 		public user: User | null,
 		public id: string,
