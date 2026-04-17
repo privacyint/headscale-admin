@@ -57,6 +57,10 @@ export function getTypeName(item: Named): ItemTypeName {
 	if (isUser(item)) {
 		return 'user';
 	}
+	if ('key' in item) {
+		// PreAuthKey
+		return getPreAuthKeyType(item as PreAuthKey) === 'user' ? 'user' : 'tag';
+	}
 	throw new Error('Item Provided is an Invalid Type');
 }
 
@@ -100,6 +104,14 @@ export class PreAuthKey {
 		} else {
 			return 'PreAuth Key';
 		}
+	}
+}
+
+export function getPreAuthKeyType(key: PreAuthKey): 'user' | 'tag' {
+	if (key.user) {
+		return 'user';
+	} else {
+		return 'tag';
 	}
 }
 

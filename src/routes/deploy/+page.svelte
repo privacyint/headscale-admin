@@ -34,6 +34,8 @@
 	let keyType = $state<'user' | 'tags'>('user');
 	let selectedTags = $state('');
 
+	let currentUserId = $derived(keyType === 'user' ? deployment.preAuthKeyUser : null);
+
 	let craftCommand = (d: Deployment) => {
 		const cmd = ['tailscale up --login-server=' + (App.apiUrl.value || page.url.origin)];
 
@@ -79,7 +81,7 @@
 		}
 
 		try {
-			const user = keyType === 'user' ? App.users.value.find(u => u.id === deployment.preAuthKeyUser) : null;
+			const user = currentUserId ? App.users.value.find(u => u.id === currentUserId) || null : null;
 			const tags = keyType === 'tags' ? selectedTags.split(',').map(t => t.trim()).filter(t => t) : null;
 			if (keyType === 'user' && !user) {
 				toastError('Selected user not found', ToastStore);
@@ -211,9 +213,9 @@
 								}}
 							>
 								<option value=""
-									>{App.preAuthKeys.value.filter(createFilter(keyType === 'user' ? deployment.preAuthKeyUser : null)).length} Valid Key(s) — select to identify</option
+									>{App.preAuthKeys.value.filter(createFilter(currentUserId)).length} Valid Key(s) — select to identify</option
 								>
-								{#each App.preAuthKeys.value.filter(createFilter(keyType === 'user' ? deployment.preAuthKeyUser : null)) as preAuthKey}
+								{#each App.preAuthKeys.value.filter(createFilter(currentUserId)) as preAuthKey}
 									<option value={preAuthKey.key}>{preAuthKey.key.substring(0, 10)}… (created {new Date(preAuthKey.createdAt).toLocaleDateString()})</option>
 								{/each}
 							</select>

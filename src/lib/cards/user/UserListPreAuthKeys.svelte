@@ -95,6 +95,7 @@
 								try {
 									const preAuthKey = await createPreAuthKey(
 										user,
+										null,
 										checked.ephemeral,
 										checked.reusable,
 										expires,
