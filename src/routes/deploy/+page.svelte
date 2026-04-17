@@ -73,7 +73,7 @@
 		}
 
 		try {
-			const user = deployment.preAuthKeyUser === null ? null : App.users.value.find(u => u.id === deployment.preAuthKeyUser);
+			const user = deployment.preAuthKeyUser === null ? null : App.users.value.find(u => u.id === deployment.preAuthKeyUser) || null;
 			const preAuthKey = await createPreAuthKey(user, false, false, new Date(Date.now() + 24 * 60 * 60 * 1000)); // 24 hours from now
 			App.preAuthKeys.value.push(preAuthKey);
 			deployment.preAuthKey = preAuthKey.key;
