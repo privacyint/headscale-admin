@@ -135,6 +135,7 @@ export class HeadscaleAdmin {
     // layouts
     layoutUser = new StateLocal<LayoutStyle>('layoutUser', 'list');
     layoutNode = new StateLocal<LayoutStyle>('layoutNode', 'list');
+    layoutTag = new StateLocal<LayoutStyle>('layoutTag', 'list');
     layoutRoute = new StateLocal<LayoutStyle>('layoutRoute', 'list');
 
     toggleLayoutUser() {

@@ -3,8 +3,10 @@
 	import DrawerEntry from './DrawerEntry.svelte';
 	import UserInfo from '$lib/cards/user/UserInfo.svelte';
 	import NodeInfo from '$lib/cards/node/NodeInfo.svelte';
+	import TagInfo from '$lib/cards/tag/TagInfo.svelte';
 	import Navigation from '$lib/Navigation.svelte';
 	import { App } from '$lib/States.svelte';
+	import { getTagsFromNodes } from '$lib/common/funcs';
 
 	const drawerStore = getDrawerStore();
 
@@ -20,6 +22,12 @@
 		{#if $drawerStore?.id?.startsWith('nodeDrawer-')}
 			<DrawerEntry title={App.nodes.value.find((n) => n.id === $drawerStore?.meta.id)?.givenName ?? 'N/A'}>
 				<NodeInfo node={App.nodes.value.find((n) => n.id === $drawerStore?.meta.id) || $drawerStore.meta} />
+			</DrawerEntry>
+		{/if}
+		{#if $drawerStore?.id?.startsWith('tagDrawer-')}
+			{@const tag = getTagsFromNodes(App.nodes.value).find((t) => t.name === $drawerStore?.meta.name) ?? $drawerStore.meta}
+			<DrawerEntry title={tag.name}>
+				<TagInfo {tag} />
 			</DrawerEntry>
 		{/if}
 		{#if $drawerStore?.id?.startsWith('navDrawer')}

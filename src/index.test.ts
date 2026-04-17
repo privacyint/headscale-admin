@@ -13,8 +13,12 @@ import {
 	dateToStr,
 	getSortedUsers,
 	getSortedNodes,
+	getTagsFromNodes,
+	getSortedTags,
+	filterTag,
+	getSortedFilteredTags,
 } from '$lib/common/funcs';
-import type { User, Node } from '$lib/common/types';
+import type { User, Node, Tag } from '$lib/common/types';
 
 // ---- clone ----
 
@@ -225,5 +229,145 @@ describe('getSortedNodes', () => {
 	it('sorts by givenName ascending', () => {
 		const sorted = getSortedNodes([...nodes], 'name', 'up');
 		expect(sorted.map((n) => n.givenName)).toEqual(['alpha', 'beta', 'gamma']);
+	});
+});
+
+// ---- Tag helpers ----
+
+function makeNode(overrides: Partial<Node> & { id: string; givenName: string; name: string; tags: string[] }): Node {
+	return {
+		machineKey: '',
+		nodeKey: '',
+		discoKey: '',
+		ipAddresses: [],
+		user: { id: '1', name: 'alice', createdAt: '', displayName: '', email: '', providerId: '', provider: 'local', profilePicUrl: '' },
+		lastSeen: null,
+		expiry: null,
+		preAuthKey: null,
+		createdAt: '2025-01-01T00:00:00Z',
+		registerMethod: 'REGISTER_METHOD_CLI',
+		online: false,
+		approvedRoutes: [],
+		availableRoutes: [],
+		subnetRoutes: [],
+		...overrides,
+	} as Node;
+}
+
+describe('getTagsFromNodes', () => {
+	it('returns empty array when no nodes have tags', () => {
+		const nodes = [makeNode({ id: '1', name: 'a', givenName: 'a', tags: [] })];
+		expect(getTagsFromNodes(nodes)).toEqual([]);
+	});
+
+	it('groups nodes by tag', () => {
+		const nodes = [
+			makeNode({ id: '1', name: 'a', givenName: 'a', tags: ['tag:web'] }),
+			makeNode({ id: '2', name: 'b', givenName: 'b', tags: ['tag:web', 'tag:db'] }),
+			makeNode({ id: '3', name: 'c', givenName: 'c', tags: ['tag:db'] }),
+		];
+		const tags = getTagsFromNodes(nodes);
+		expect(tags).toHaveLength(2);
+
+		const webTag = tags.find((t) => t.name === 'tag:web');
+		expect(webTag).toBeDefined();
+		expect(webTag!.nodes).toHaveLength(2);
+
+		const dbTag = tags.find((t) => t.name === 'tag:db');
+		expect(dbTag).toBeDefined();
+		expect(dbTag!.nodes).toHaveLength(2);
+	});
+
+	it('adds tag: prefix if missing', () => {
+		const nodes = [makeNode({ id: '1', name: 'a', givenName: 'a', tags: ['server'] })];
+		const tags = getTagsFromNodes(nodes);
+		expect(tags[0].name).toBe('tag:server');
+	});
+});
+
+describe('filterTag', () => {
+	const webTag: Tag = {
+		name: 'tag:web',
+		nodes: [
+			makeNode({ id: '1', name: 'web1', givenName: 'web-server-1', tags: ['tag:web'], online: true }),
+			makeNode({ id: '2', name: 'web2', givenName: 'web-server-2', tags: ['tag:web'], online: false }),
+		],
+	};
+
+	it('returns true for empty filter string', () => {
+		expect(filterTag(webTag, '')).toBe(true);
+	});
+
+	it('matches tag name', () => {
+		expect(filterTag(webTag, 'web')).toBe(true);
+	});
+
+	it('matches node givenName', () => {
+		expect(filterTag(webTag, 'web-server-1')).toBe(true);
+	});
+
+	it('returns false for non-matching filter', () => {
+		expect(filterTag(webTag, 'database')).toBe(false);
+	});
+
+	it('filters by online status', () => {
+		expect(filterTag(webTag, '', 'online')).toBe(true);
+
+		const offlineTag: Tag = {
+			name: 'tag:offline',
+			nodes: [makeNode({ id: '3', name: 'off', givenName: 'offline-node', tags: ['tag:offline'], online: false })],
+		};
+		expect(filterTag(offlineTag, '', 'online')).toBe(false);
+		expect(filterTag(offlineTag, '', 'offline')).toBe(true);
+	});
+});
+
+describe('getSortedTags', () => {
+	const tags: Tag[] = [
+		{ name: 'tag:db', nodes: [makeNode({ id: '1', name: 'a', givenName: 'a', tags: [] })] },
+		{ name: 'tag:web', nodes: [
+			makeNode({ id: '2', name: 'b', givenName: 'b', tags: [] }),
+			makeNode({ id: '3', name: 'c', givenName: 'c', tags: [] }),
+		]},
+		{ name: 'tag:api', nodes: [] },
+	];
+
+	it('sorts by name ascending', () => {
+		const sorted = getSortedTags([...tags], 'name', 'up');
+		expect(sorted.map((t) => t.name)).toEqual(['tag:api', 'tag:db', 'tag:web']);
+	});
+
+	it('sorts by name descending', () => {
+		const sorted = getSortedTags([...tags], 'name', 'down');
+		expect(sorted.map((t) => t.name)).toEqual(['tag:web', 'tag:db', 'tag:api']);
+	});
+
+	it('sorts by node count ascending', () => {
+		const sorted = getSortedTags([...tags], 'nodes', 'up');
+		expect(sorted.map((t) => t.nodes.length)).toEqual([0, 1, 2]);
+	});
+
+	it('sorts by node count descending', () => {
+		const sorted = getSortedTags([...tags], 'nodes', 'down');
+		expect(sorted.map((t) => t.nodes.length)).toEqual([2, 1, 0]);
+	});
+});
+
+describe('getSortedFilteredTags', () => {
+	const tags: Tag[] = [
+		{ name: 'tag:web', nodes: [makeNode({ id: '1', name: 'w', givenName: 'web1', tags: [], online: true })] },
+		{ name: 'tag:db', nodes: [makeNode({ id: '2', name: 'd', givenName: 'db1', tags: [], online: false })] },
+	];
+
+	it('filters and sorts combined', () => {
+		const result = getSortedFilteredTags(tags, 'web', 'name', 'up', 'all');
+		expect(result).toHaveLength(1);
+		expect(result[0].name).toBe('tag:web');
+	});
+
+	it('filters by online status and sorts', () => {
+		const result = getSortedFilteredTags(tags, '', 'name', 'up', 'online');
+		expect(result).toHaveLength(1);
+		expect(result[0].name).toBe('tag:web');
 	});
 });
