@@ -210,7 +210,33 @@ const server = createServer((req, res) => {
   // ── POST endpoints ──────────────────────────────────────────────────────
   if (method === 'POST') {
     if (path === '/api/v1/user')             return json(res, { user: { ...users[0], id: '99', name: 'new-user' } });
-    if (path === '/api/v1/preauthkey')       return json(res, { preAuthKey: preAuthKeys[0] });
+    if (path === '/api/v1/preauthkey') {
+      // Parse request body to create appropriate preauth key
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          const user = data.user ? users.find(u => u.id === data.user) : null;
+          const newKey = {
+            user,
+            id: String(preAuthKeys.length + 1),
+            key: `pak_${user ? user.name : 'global'}_${Date.now()}`,
+            reusable: data.reusable || false,
+            ephemeral: data.ephemeral || false,
+            used: false,
+            expiration: data.expiration || new Date(Date.now() + 86_400_000).toISOString(),
+            createdAt: new Date().toISOString(),
+            aclTags: [],
+          };
+          preAuthKeys.push(newKey);
+          return json(res, { preAuthKey: newKey });
+        } catch (e) {
+          return json(res, { preAuthKey: preAuthKeys[0] });
+        }
+      });
+      return; // Async handling
+    }
     if (path === '/api/v1/preauthkey/expire') return json(res, {});
     if (path === '/api/v1/apikey')           return json(res, { apiKey: 'new-api-key-value' });
     if (path === '/api/v1/apikey/expire')    return json(res, {});
