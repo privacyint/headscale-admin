@@ -526,6 +526,65 @@ export function filterPreAuthKey(preAuthKey: PreAuthKey, filterString: string): 
 	}
 }
 
+export function getSortedPreAuthKeys(preAuthKeys: PreAuthKey[], sortMethod: string, sortDirection: Direction): PreAuthKey[] {
+	if (sortMethod === 'id') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aid = parseInt(a.id);
+			const bid = parseInt(b.id);
+			if (aid < bid) {
+				return -1;
+			}
+			if (aid > bid) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortMethod === 'user') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aUser = a.user?.name || '';
+			const bUser = b.user?.name || '';
+			if (aUser < bUser) {
+				return -1;
+			}
+			if (aUser > bUser) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortMethod === 'created') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aDate = new Date(a.createdAt);
+			const bDate = new Date(b.createdAt);
+			if (aDate < bDate) {
+				return -1;
+			}
+			if (aDate > bDate) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortMethod === 'expiration') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aDate = new Date(a.expiration);
+			const bDate = new Date(b.expiration);
+			if (aDate < bDate) {
+				return -1;
+			}
+			if (aDate > bDate) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortDirection === 'down') {
+		return preAuthKeys.reverse();
+	}
+	return preAuthKeys;
+}
+
 export function getSortedFilteredPreAuthKeys(
 	preAuthKeys: PreAuthKey[],
 	filterString: string,
