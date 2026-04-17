@@ -31,6 +31,8 @@
 
 	// $: deployment = defaultDeployment();
 	let deployment: Deployment = $state(App.deploymentDefaults.value);
+	let keyType = $state<'user' | 'tags'>('user');
+	let selectedTags = $state('');
 
 	let craftCommand = (d: Deployment) => {
 		const cmd = ['tailscale up --login-server=' + (App.apiUrl.value || page.url.origin)];
@@ -67,14 +69,23 @@
 	};
 
 	async function createNewPreAuthKey() {
-		if (deployment.preAuthKeyUser === undefined) {
-			toastError('Please select a user or Global first', ToastStore);
+		if (keyType === 'user' && !deployment.preAuthKeyUser) {
+			toastError('Please select a user', ToastStore);
+			return;
+		}
+		if (keyType === 'tags' && !selectedTags.trim()) {
+			toastError('Please enter at least one tag', ToastStore);
 			return;
 		}
 
 		try {
-			const user = deployment.preAuthKeyUser === null ? null : App.users.value.find(u => u.id === deployment.preAuthKeyUser) || null;
-			const preAuthKey = await createPreAuthKey(user, false, false, new Date(Date.now() + 24 * 60 * 60 * 1000)); // 24 hours from now
+			const user = keyType === 'user' ? App.users.value.find(u => u.id === deployment.preAuthKeyUser) : null;
+			const tags = keyType === 'tags' ? selectedTags.split(',').map(t => t.trim()).filter(t => t) : null;
+			if (keyType === 'user' && !user) {
+				toastError('Selected user not found', ToastStore);
+				return;
+			}
+			const preAuthKey = await createPreAuthKey(user, tags, false, false, new Date(Date.now() + 24 * 60 * 60 * 1000)); // 24 hours from now
 			App.preAuthKeys.value.push(preAuthKey);
 			deployment.preAuthKey = preAuthKey.key;
 
@@ -144,45 +155,75 @@
 		<DeployCheck
 			bind:checked={deployment.usePreAuthKey}
 			name="PreAuth Key"
-			help="A generated key to automatically authenticate the node for a given user"
+			help="A generated key to automatically authenticate the node for a given user or tags"
 		>
 			<div class="flex flex-col gap-2">
-				<div class="flex gap-2">
-					<select bind:value={deployment.preAuthKeyUser} class="input rounded-md flex-1">
-						<option value={null}>Global</option>
+				<div class="flex flex-row space-x-4">
+					<label class="flex items-center space-x-2">
+						<input
+							class="radio"
+							type="radio"
+							bind:group={keyType}
+							value="user"
+						/>
+						<span>User</span>
+					</label>
+					<label class="flex items-center space-x-2">
+						<input
+							class="radio"
+							type="radio"
+							bind:group={keyType}
+							value="tags"
+						/>
+						<span>Tags</span>
+					</label>
+				</div>
+				
+				{#if keyType === 'user'}
+					<select bind:value={deployment.preAuthKeyUser} class="input rounded-md">
+						<option value=""></option>
 						{#each App.users.value as user}
 							<option value={user.id}>{user.name}</option>
 						{/each}
 					</select>
-					<button
-						class="btn btn-sm variant-filled-primary"
-						onclick={createNewPreAuthKey}
-						disabled={deployment.preAuthKeyUser === undefined}
-					>
-						Create New
-					</button>
-				</div>
-				{#if deployment.preAuthKeyUser !== undefined}
+				{:else}
+					<input
+						type="text"
+						class="input rounded-md"
+						placeholder="Enter tags (comma-separated)"
+						bind:value={selectedTags}
+					/>
+				{/if}
+				
+				{#if (keyType === 'user' && deployment.preAuthKeyUser) || (keyType === 'tags' && selectedTags.trim())}
 					<div transition:slide class="flex flex-col gap-2">
 						<div class="flex items-center gap-2 text-xs text-warning-500">
 							<span>⚠ Keys below are hashed — paste the full key copied at creation time.</span>
 						</div>
-						<select
-							class="input rounded-md"
-							onchange={(e) => {
-								const val = e.currentTarget.value;
-								if (val) {
-									deployment.preAuthKey = val;
-								}
-							}}
-						>
-							<option value=""
-								>{App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)).length} Valid Key(s) — select to identify</option
+						<div class="flex gap-2">
+							<select
+								class="input rounded-md flex-1"
+								onchange={(e) => {
+									const val = e.currentTarget.value;
+									if (val) {
+										deployment.preAuthKey = val;
+									}
+								}}
 							>
-							{#each App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)) as preAuthKey}
-								<option value={preAuthKey.key}>{preAuthKey.key.substring(0, 10)}… (created {new Date(preAuthKey.createdAt).toLocaleDateString()})</option>
-							{/each}
-						</select>
+								<option value=""
+									>{App.preAuthKeys.value.filter(createFilter(keyType === 'user' ? deployment.preAuthKeyUser : null)).length} Valid Key(s) — select to identify</option
+								>
+								{#each App.preAuthKeys.value.filter(createFilter(keyType === 'user' ? deployment.preAuthKeyUser : null)) as preAuthKey}
+									<option value={preAuthKey.key}>{preAuthKey.key.substring(0, 10)}… (created {new Date(preAuthKey.createdAt).toLocaleDateString()})</option>
+								{/each}
+							</select>
+							<button
+								class="btn btn-sm variant-filled-primary"
+								onclick={createNewPreAuthKey}
+							>
+								Create New
+							</button>
+						</div>
 						<input
 							type="text"
 							class="input text-sm rounded-md font-mono"

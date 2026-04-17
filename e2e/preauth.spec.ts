@@ -69,6 +69,25 @@ test.describe('preauth keys', () => {
     await page.getByRole('button', { name: 'Create', exact: true }).first().click();
   });
 
+  test('tagged preauth key creation works', async ({ page }) => {
+    await page.goto('/preauth');
+
+    // Click the create button
+    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
+
+    // Check that Tags radio button is visible
+    await expect(page.locator('input[value="tags"]')).toBeVisible();
+
+    // Select Tags mode
+    await page.locator('input[value="tags"]').click();
+
+    // Check that tag input appears
+    await expect(page.getByPlaceholder('Enter tags (comma-separated)')).toBeVisible();
+
+    // Close the form
+    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
+  });
+
   test('preauth key details can be viewed', async ({ page }) => {
     await page.goto('/preauth');
 
@@ -131,8 +150,8 @@ test.describe('deploy page preauth integration', () => {
     // Enable preauth key option
     await page.getByRole('checkbox', { name: 'PreAuth Key' }).check();
 
-    // Select Global
-    await page.locator('.flex.gap-2 select').first().selectOption('Global');
+    // Select alice user
+    await page.locator('select').first().selectOption('alice');
 
     // Click Create New button
     await page.getByRole('button', { name: 'Create New' }).click();
@@ -155,7 +174,7 @@ test.describe('deploy page preauth integration', () => {
     await page.getByRole('checkbox', { name: 'PreAuth Key' }).check();
 
     // Select alice user
-    await page.locator('.flex.gap-2 select').first().selectOption('alice');
+    await page.locator('select').first().selectOption('alice');
 
     // Select the existing key
     await page.locator('select').nth(1).selectOption('pak_alice_0001');
@@ -164,4 +183,18 @@ test.describe('deploy page preauth integration', () => {
     const commandText = await page.locator('code').textContent();
     expect(commandText).toContain('--auth-key=pak_alice_0001');
   });
-});
+  test('deploy page can create tagged preauth key', async ({ page }) => {
+    await page.goto('/deploy');
+
+    // Enable preauth key option
+    await page.getByRole('checkbox', { name: 'PreAuth Key' }).check();
+
+    // Check that Tags radio button is visible
+    await expect(page.locator('input[value="tags"]')).toBeVisible();
+
+    // Select Tags mode
+    await page.locator('input[value="tags"]').click();
+
+    // Check that tag input appears
+    await expect(page.getByPlaceholder('Enter tags (comma-separated)')).toBeVisible();
+  });});

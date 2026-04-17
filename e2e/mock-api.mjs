@@ -218,16 +218,17 @@ const server = createServer((req, res) => {
         try {
           const data = JSON.parse(body);
           const user = data.user ? users.find(u => u.id === data.user) : null;
+          const aclTags = data.aclTags || [];
           const newKey = {
             user,
             id: String(preAuthKeys.length + 1),
-            key: `pak_${user ? user.name : 'global'}_${Date.now()}`,
+            key: `pak_${user ? user.name : aclTags.length > 0 ? 'tagged' : 'global'}_${Date.now()}`,
             reusable: data.reusable || false,
             ephemeral: data.ephemeral || false,
             used: false,
             expiration: data.expiration || new Date(Date.now() + 86_400_000).toISOString(),
             createdAt: new Date().toISOString(),
-            aclTags: [],
+            aclTags,
           };
           preAuthKeys.push(newKey);
           return json(res, { preAuthKey: newKey });
@@ -237,7 +238,6 @@ const server = createServer((req, res) => {
       });
       return; // Async handling
     }
-    if (path === '/api/v1/preauthkey/expire') return json(res, {});
     if (path === '/api/v1/apikey')           return json(res, { apiKey: 'new-api-key-value' });
     if (path === '/api/v1/apikey/expire')    return json(res, {});
 

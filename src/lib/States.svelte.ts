@@ -162,7 +162,7 @@ export class HeadscaleAdmin {
         forceReauth: false,
         sshServer: false,
         usePreAuthKey: false,
-        preAuthKeyUser: null,
+        preAuthKeyUser: '',
         preAuthKey: '',
         unattended: false,
         // advertise

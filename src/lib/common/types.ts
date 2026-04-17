@@ -93,7 +93,13 @@ export class PreAuthKey {
 	};
 
 	get name(): string {
-		return this.user ? `${this.user.name} PreAuth Key` : `Global PreAuth Key`;
+		if (this.user) {
+			return `${this.user.name} PreAuth Key`;
+		} else if (this.aclTags.length > 0) {
+			return `Tagged PreAuth Key (${this.aclTags.join(', ')})`;
+		} else {
+			return 'PreAuth Key';
+		}
 	}
 }
 
@@ -200,7 +206,7 @@ export type Deployment = {
 	forceReauth: boolean;
 	sshServer: boolean;
 	usePreAuthKey: boolean;
-	preAuthKeyUser: string | null;
+	preAuthKeyUser: string;
 	preAuthKey: string;
 	unattended: boolean;
 	// advertise

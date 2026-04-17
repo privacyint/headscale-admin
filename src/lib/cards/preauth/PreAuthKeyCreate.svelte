@@ -17,6 +17,8 @@
 	let { show = $bindable(false) }: PreAuthKeyCreateProps = $props()
 
 	let selectedUser = $state<User | null>(null);
+	let selectedTags = $state('');
+	let keyType = $state<'user' | 'tags'>('user');
 	let ephemeral = $state(false);
 	let reusable = $state(false);
 	let expiration = $state(defaultExpiration());
@@ -34,10 +36,20 @@
 	}
 
 	async function newPreAuthKey() {
+		if (keyType === 'user' && !selectedUser) {
+			toastError('Please select a user', ToastStore);
+			return;
+		}
+		if (keyType === 'tags' && !selectedTags.trim()) {
+			toastError('Please enter at least one tag', ToastStore);
+			return;
+		}
 		loading = true;
 		try {
+			const tags = keyType === 'tags' ? selectedTags.split(',').map(t => t.trim()).filter(t => t) : null;
 			const preAuthKey = await createPreAuthKey(
-				selectedUser,
+				keyType === 'user' ? selectedUser : null,
+				tags,
 				ephemeral,
 				reusable,
 				expiration
@@ -54,6 +66,8 @@
 
 			show = false;
 			selectedUser = null;
+			selectedTags = '';
+			keyType = 'user';
 			ephemeral = false;
 			reusable = false;
 			expiration = defaultExpiration();
@@ -71,19 +85,61 @@
 <div class="flex w-full">
 	<form onsubmit={newPreAuthKey} class="w-full flex flex-col space-y-4">
 		<div class="flex flex-row space-x-4">
-			<select class="select rounded-md w-full md:w-1/2" bind:value={selectedUser}>
-				<option value={null}>No User (Global)</option>
-				{#each App.users.value as user}
-					<option value={user}>{user.name} (ID: {user.id})</option>
-				{/each}
-			</select>
-			<input
-				class="input rounded-md w-full md:w-1/2"
-				type="datetime-local"
-				bind:value={expiration}
-				disabled={loading}
-			/>
+			<label class="flex items-center space-x-2">
+				<input
+					class="radio"
+					type="radio"
+					bind:group={keyType}
+					value="user"
+					disabled={loading}
+				/>
+				<span>User</span>
+			</label>
+			<label class="flex items-center space-x-2">
+				<input
+					class="radio"
+					type="radio"
+					bind:group={keyType}
+					value="tags"
+					disabled={loading}
+				/>
+				<span>Tags</span>
+			</label>
 		</div>
+		
+		{#if keyType === 'user'}
+			<div class="flex flex-row space-x-4">
+				<select class="select rounded-md w-full md:w-1/2" bind:value={selectedUser} required>
+					<option value={null} disabled>Select a user...</option>
+					{#each App.users.value as user}
+						<option value={user}>{user.name} (ID: {user.id})</option>
+					{/each}
+				</select>
+				<input
+					class="input rounded-md w-full md:w-1/2"
+					type="datetime-local"
+					bind:value={expiration}
+					disabled={loading}
+				/>
+			</div>
+		{:else}
+			<div class="flex flex-row space-x-4">
+				<input
+					class="input rounded-md w-full md:w-1/2"
+					type="text"
+					placeholder="Enter tags (comma-separated)"
+					bind:value={selectedTags}
+					disabled={loading}
+				/>
+				<input
+					class="input rounded-md w-full md:w-1/2"
+					type="datetime-local"
+					bind:value={expiration}
+					disabled={loading}
+				/>
+			</div>
+		{/if}
+		
 		<div class="flex flex-row space-x-4 items-center">
 			<label class="flex items-center space-x-2">
 				<input
