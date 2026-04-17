@@ -1,0 +1,37 @@
+name: Bump update version
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    name: Increment update number in debug.ts
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Increment update number
+        run: |
+          FILE="src/lib/common/debug.ts"
+          # Extract current update number and increment it
+          CURRENT=$(grep -oP "(?<=update)\d+" "$FILE")
+          NEXT=$((CURRENT + 1))
+          sed -i "s|/update${CURRENT}'|/update${NEXT}'|" "$FILE"
+          echo "Bumped update${CURRENT} → update${NEXT}"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/lib/common/debug.ts
+          git commit -m "chore: bump update version [skip ci]"
+          git push
