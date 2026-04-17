@@ -32,6 +32,7 @@
 						show = false;
 					}
 				}}
+				data-testid="confirm-delete"
 			>
 				<RawMdiCheckCircleOutline />
 			</button>
@@ -46,7 +47,7 @@
 		</span>
 	{/if}
 	<span class="text-error-600 dark:text-error-400 ml-2">
-		<button {disabled} onclick={() => (show = !show)}>
+		<button {disabled} onclick={() => (show = !show)} data-testid="delete-button">
 			<RawMdiDelete />
 		</button>
 	</span>
