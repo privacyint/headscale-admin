@@ -34,6 +34,11 @@ Please note that headscale-admin is an entirely stateless application. The stati
 
 headscale-admin was built using the [Skeleton](https://github.com/skeletonlabs/skeleton) framework on top of [SvelteKit](https://svelte.dev/tutorial/kit/introducing-sveltekit) + [TailwindCSS](https://tailwindcss.com/). It uses svelte/adapter-static to produce only static files when built. They can be hosted on nearly any server or environment as they are not contingent upon any specific runtime library.
 
+#### Prerequisites
+
+- **Node.js 25** or later is required to build from source.
+- **npm** (bundled with Node.js) is used for dependency management.
+
 #### Endpoint
 **Note:** If you are building headscale-admin from source and want to host it on an endpoint other than the base of the domain, (e.g. `headscale.example.com/admin`) then you must set the `ENDPOINT` environment variable when building. Otherwise, it will default to expecting to be hosted on the root path "myheadscale.com/" and redirects and resource loading will not work correctly if you place them in a child folder. Once built, it is recommended to rename the `build` directory to the same name as your `$ENDPOINT` variable so the requests can follow the folder structure and not have to be stripped or rewritten by a front end proxy. The provided Dockerfile shows this in practice.
 
@@ -77,9 +82,10 @@ $env:ENDPOINT=/admin
 
 #### Build
 
-You can create the production build by running:
+Install dependencies and create the production build:
 
 ```
+npm install
 npm run build
 ```
 This will create a `build` directory that expects to be hosted at the provided `ENDPOINT` variable relative to the root domain.
