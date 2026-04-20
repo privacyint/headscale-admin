@@ -314,9 +314,11 @@ const server = createServer((req, res) => {
     if (deleteUserMatch) return json(res, {});
     const deleteNodeMatch = path.match(/^\/api\/v1\/node\/(\d+)$/);
     if (deleteNodeMatch) return json(res, {});
-    const deletePreAuthKeyMatch = path.match(/^\/api\/v1\/preauthkey\/(\d+)$/);
-    if (deletePreAuthKeyMatch) {
-      const id = deletePreAuthKeyMatch[1];
+    if (path === '/api/v1/preauthkey') {
+      const id = url.searchParams.get('id');
+      if (!id) {
+        return notFound(res);
+      }
       const index = preAuthKeys.findIndex(pak => pak.id === id);
       if (index !== -1) {
         preAuthKeys.splice(index, 1);
