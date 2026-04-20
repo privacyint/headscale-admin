@@ -46,7 +46,7 @@ export async function deleteNode(node: Node): Promise<boolean> {
 
 export async function deletePreAuthKey(preAuthKey: PreAuthKey): Promise<boolean> {
 	try {
-		await apiDelete(`${API_URL_PREAUTHKEY}/${preAuthKey.id}`);
+		await apiDelete(`${API_URL_PREAUTHKEY}?id=${encodeURIComponent(preAuthKey.id)}`);
 		// Remove from App.preAuthKeys if it exists
 		App.preAuthKeys.value = App.preAuthKeys.value.filter((pak: PreAuthKey) => pak.id != preAuthKey.id);
 		debug('Deleted PreAuthKey "' + preAuthKey.name + '"');
