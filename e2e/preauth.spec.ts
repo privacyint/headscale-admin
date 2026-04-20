@@ -5,6 +5,11 @@ const API_KEY = 'test-api-key';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+async function resetMockApi() {
+  const response = await fetch(`${MOCK_URL}/test/reset`, { method: 'POST' });
+  expect(response.ok).toBe(true);
+}
+
 /** Pre-seed localStorage so the page loads already authenticated. */
 async function seedAuth(page: Page) {
   await page.goto('/');
@@ -20,6 +25,10 @@ async function seedAuth(page: Page) {
   // Wait for the app shell to be ready
   await page.locator('[data-testid="app-shell"]').waitFor({ timeout: 10000 });
 }
+
+test.beforeEach(async () => {
+  await resetMockApi();
+});
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
