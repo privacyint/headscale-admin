@@ -7,26 +7,34 @@
 		toastError,
 		toastSuccess,
 	} from '$lib/common/funcs';
+	import { createPreAuthKey } from '$lib/common/api';
 	import DeployCheck from './DeployCheck.svelte';
 	import Page from '$lib/page/Page.svelte';
 	import PageHeader from '$lib/page/PageHeader.svelte';
 	import type { Deployment, PreAuthKey } from '$lib/common/types';
-	import { InputChip, getToastStore } from '@skeletonlabs/skeleton';
+	import { InputChip, getToastStore, getModalStore, type ModalSettings } from '@skeletonlabs/skeleton';
+	import PreAuthKeyModal from '$lib/parts/PreAuthKeyModal.svelte';
 	import { page } from '$app/state';
 	import { slide } from 'svelte/transition';
 
 	import { App } from '$lib/States.svelte';
 
 	const ToastStore = getToastStore();
+	const ModalStore = getModalStore();
 
-	function createFilter(user_id: string) {
+	function createFilter(user_id: string | null) {
 		return (pak: PreAuthKey) => {
-			return pak.user.id === user_id && !(pak.used && !pak.reusable) && !isExpired(pak.expiration);
+			const userMatches = user_id === null ? pak.user === null : pak.user?.id === user_id;
+			return userMatches && !(pak.used && !pak.reusable) && !isExpired(pak.expiration);
 		};
 	}
 
 	// $: deployment = defaultDeployment();
 	let deployment: Deployment = $state(App.deploymentDefaults.value);
+	let keyType = $state<'user' | 'tags'>('user');
+	let selectedTags = $state('');
+
+	let currentUserId = $derived(keyType === 'user' ? deployment.preAuthKeyUser : null);
 
 	let craftCommand = (d: Deployment) => {
 		const cmd = ['tailscale up --login-server=' + (App.apiUrl.value || page.url.origin)];
@@ -61,6 +69,41 @@
 		d.acceptExitNode && d.acceptExitNodeValue && cmd.push('--exit-node=' + d.acceptExitNodeValue);
 		return cmd.join(' ');
 	};
+
+	async function createNewPreAuthKey() {
+		if (keyType === 'user' && !deployment.preAuthKeyUser) {
+			toastError('Please select a user', ToastStore);
+			return;
+		}
+		if (keyType === 'tags' && !selectedTags.trim()) {
+			toastError('Please enter at least one tag', ToastStore);
+			return;
+		}
+
+		try {
+			const user = currentUserId ? App.users.value.find(u => u.id === currentUserId) || null : null;
+			const tags = keyType === 'tags' ? selectedTags.split(',').map(t => t.trim()).filter(t => t) : null;
+			if (keyType === 'user' && !user) {
+				toastError('Selected user not found', ToastStore);
+				return;
+			}
+			const preAuthKey = await createPreAuthKey(user, tags, false, false, new Date(Date.now() + 24 * 60 * 60 * 1000)); // 24 hours from now
+			App.preAuthKeys.value.push(preAuthKey);
+			deployment.preAuthKey = preAuthKey.key;
+
+			const modal: ModalSettings = {
+				type: 'component',
+				component: { ref: PreAuthKeyModal, props: { key: preAuthKey.key } },
+			};
+			ModalStore.trigger(modal);
+
+			toastSuccess('Created new PreAuth key', ToastStore);
+		} catch (error) {
+			if (error instanceof Error) {
+				toastError('Failed to create PreAuth key', ToastStore, error);
+			}
+		}
+	}
 </script>
 
 <Page>
@@ -114,36 +157,75 @@
 		<DeployCheck
 			bind:checked={deployment.usePreAuthKey}
 			name="PreAuth Key"
-			help="A generated key to automatically authenticate the node for a given user"
+			help="A generated key to automatically authenticate the node for a given user or tags"
 		>
 			<div class="flex flex-col gap-2">
-				<select bind:value={deployment.preAuthKeyUser} class="input rounded-md">
-					<option value=""></option>
-					{#each App.users.value as user}
-						<option value={user.id}>{user.name}</option>
-					{/each}
-				</select>
-				{#if deployment.preAuthKeyUser}
+				<div class="flex flex-row space-x-4">
+					<label class="flex items-center space-x-2">
+						<input
+							class="radio"
+							type="radio"
+							bind:group={keyType}
+							value="user"
+						/>
+						<span>User</span>
+					</label>
+					<label class="flex items-center space-x-2">
+						<input
+							class="radio"
+							type="radio"
+							bind:group={keyType}
+							value="tags"
+						/>
+						<span>Tags</span>
+					</label>
+				</div>
+				
+				{#if keyType === 'user'}
+					<select bind:value={deployment.preAuthKeyUser} class="input rounded-md">
+						<option value=""></option>
+						{#each App.users.value as user}
+							<option value={user.id}>{user.name}</option>
+						{/each}
+					</select>
+				{:else}
+					<input
+						type="text"
+						class="input rounded-md"
+						placeholder="Enter tags (comma-separated)"
+						bind:value={selectedTags}
+					/>
+				{/if}
+				
+				{#if (keyType === 'user' && deployment.preAuthKeyUser) || (keyType === 'tags' && selectedTags.trim())}
 					<div transition:slide class="flex flex-col gap-2">
 						<div class="flex items-center gap-2 text-xs text-warning-500">
 							<span>⚠ Keys below are hashed — paste the full key copied at creation time.</span>
 						</div>
-						<select
-							class="input rounded-md"
-							onchange={(e) => {
-								const val = e.currentTarget.value;
-								if (val) {
-									deployment.preAuthKey = val;
-								}
-							}}
-						>
-							<option value=""
-								>{App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)).length} Valid Key(s) — select to identify</option
+						<div class="flex gap-2">
+							<select
+								class="input rounded-md flex-1"
+								onchange={(e) => {
+									const val = e.currentTarget.value;
+									if (val) {
+										deployment.preAuthKey = val;
+									}
+								}}
 							>
-							{#each App.preAuthKeys.value.filter(createFilter(deployment.preAuthKeyUser)) as preAuthKey}
-								<option value={preAuthKey.key}>{preAuthKey.key.substring(0, 10)}… (created {new Date(preAuthKey.createdAt).toLocaleDateString()})</option>
-							{/each}
-						</select>
+								<option value=""
+									>{App.preAuthKeys.value.filter(createFilter(currentUserId)).length} Valid Key(s) — select to identify</option
+								>
+								{#each App.preAuthKeys.value.filter(createFilter(currentUserId)) as preAuthKey}
+									<option value={preAuthKey.key}>{preAuthKey.key.substring(0, 10)}… (created {new Date(preAuthKey.createdAt).toLocaleDateString()})</option>
+								{/each}
+							</select>
+							<button
+								class="btn btn-sm variant-filled-primary"
+								onclick={createNewPreAuthKey}
+							>
+								Create New
+							</button>
+						</div>
 						<input
 							type="text"
 							class="input text-sm rounded-md font-mono"

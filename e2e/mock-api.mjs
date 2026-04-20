@@ -21,7 +21,7 @@ const VALID_KEY = 'test-api-key';
 
 // ── Fixture data ────────────────────────────────────────────────────────────
 
-const users = [
+const baseUsers = [
   {
     id: '1',
     name: 'alice',
@@ -44,92 +44,112 @@ const users = [
   },
 ];
 
-const nodes = [
-  {
-    id: '1',
-    machineKey: 'mkey:abc123',
-    nodeKey: 'nodekey:def456',
-    discoKey: 'discokey:ghi789',
-    ipAddresses: ['100.64.0.1', 'fd7a:115c:a1e0::1'],
-    name: 'alice-laptop',
-    user: users[0],
-    lastSeen: new Date().toISOString(),
-    expiry: '0001-01-01T00:00:00Z',
-    preAuthKey: null,
-    createdAt: '2025-01-10T00:00:00Z',
-    registerMethod: 'REGISTER_METHOD_CLI',
-    givenName: 'alice-laptop',
-    online: true,
-    approvedRoutes: [],
-    availableRoutes: ['10.0.0.0/24'],
-    subnetRoutes: [],
-    tags: [],
-  },
-  {
-    id: '2',
-    machineKey: 'mkey:xyz321',
-    nodeKey: 'nodekey:uvw654',
-    discoKey: 'discokey:rst987',
-    ipAddresses: ['100.64.0.2', 'fd7a:115c:a1e0::2'],
-    name: 'bob-server',
-    user: users[1],
-    lastSeen: new Date(Date.now() - 86_400_000).toISOString(),
-    expiry: '0001-01-01T00:00:00Z',
-    preAuthKey: null,
-    createdAt: '2025-02-10T00:00:00Z',
-    registerMethod: 'REGISTER_METHOD_AUTH_KEY',
-    givenName: 'bob-server',
-    online: false,
-    approvedRoutes: ['10.1.0.0/24'],
-    availableRoutes: ['10.1.0.0/24', '10.2.0.0/24'],
-    subnetRoutes: [],
-    tags: ['tag:server'],
-  },
-  {
-    id: '3',
-    machineKey: 'mkey:jkl111',
-    nodeKey: 'nodekey:mno222',
-    discoKey: 'discokey:pqr333',
-    ipAddresses: ['100.64.0.3', 'fd7a:115c:a1e0::3'],
-    name: 'infra-gateway',
-    user: users[0],
-    lastSeen: new Date().toISOString(),
-    expiry: '0001-01-01T00:00:00Z',
-    preAuthKey: null,
-    createdAt: '2025-03-10T00:00:00Z',
-    registerMethod: 'REGISTER_METHOD_AUTH_KEY',
-    givenName: 'infra-gateway',
-    online: true,
-    approvedRoutes: [],
-    availableRoutes: [],
-    subnetRoutes: [],
-    tags: ['tag:server', 'tag:infra'],
-  },
-];
+function createNodes(users) {
+  return [
+    {
+      id: '1',
+      machineKey: 'mkey:abc123',
+      nodeKey: 'nodekey:def456',
+      discoKey: 'discokey:ghi789',
+      ipAddresses: ['100.64.0.1', 'fd7a:115c:a1e0::1'],
+      name: 'alice-laptop',
+      user: users[0],
+      lastSeen: new Date().toISOString(),
+      expiry: '0001-01-01T00:00:00Z',
+      preAuthKey: null,
+      createdAt: '2025-01-10T00:00:00Z',
+      registerMethod: 'REGISTER_METHOD_CLI',
+      givenName: 'alice-laptop',
+      online: true,
+      approvedRoutes: [],
+      availableRoutes: ['10.0.0.0/24'],
+      subnetRoutes: [],
+      tags: [],
+    },
+    {
+      id: '2',
+      machineKey: 'mkey:xyz321',
+      nodeKey: 'nodekey:uvw654',
+      discoKey: 'discokey:rst987',
+      ipAddresses: ['100.64.0.2', 'fd7a:115c:a1e0::2'],
+      name: 'bob-server',
+      user: users[1],
+      lastSeen: new Date(Date.now() - 86_400_000).toISOString(),
+      expiry: '0001-01-01T00:00:00Z',
+      preAuthKey: null,
+      createdAt: '2025-02-10T00:00:00Z',
+      registerMethod: 'REGISTER_METHOD_AUTH_KEY',
+      givenName: 'bob-server',
+      online: false,
+      approvedRoutes: ['10.1.0.0/24'],
+      availableRoutes: ['10.1.0.0/24', '10.2.0.0/24'],
+      subnetRoutes: [],
+      tags: ['tag:server'],
+    },
+    {
+      id: '3',
+      machineKey: 'mkey:jkl111',
+      nodeKey: 'nodekey:mno222',
+      discoKey: 'discokey:pqr333',
+      ipAddresses: ['100.64.0.3', 'fd7a:115c:a1e0::3'],
+      name: 'infra-gateway',
+      user: users[0],
+      lastSeen: new Date().toISOString(),
+      expiry: '0001-01-01T00:00:00Z',
+      preAuthKey: null,
+      createdAt: '2025-03-10T00:00:00Z',
+      registerMethod: 'REGISTER_METHOD_AUTH_KEY',
+      givenName: 'infra-gateway',
+      online: true,
+      approvedRoutes: [],
+      availableRoutes: [],
+      subnetRoutes: [],
+      tags: ['tag:server', 'tag:infra'],
+    },
+  ];
+}
 
-const preAuthKeys = [
-  {
-    user: users[0],
-    id: '1',
-    key: 'pak_alice_0001',
-    reusable: false,
-    ephemeral: false,
-    used: false,
-    expiration: new Date(Date.now() + 86_400_000 * 30).toISOString(),
-    createdAt: '2025-03-01T00:00:00Z',
-    aclTags: [],
-  },
-];
+function createPreAuthKeys(users) {
+  return [
+    {
+      user: users[0],
+      id: '1',
+      key: 'pak_alice_0001',
+      reusable: false,
+      ephemeral: false,
+      used: false,
+      expiration: new Date(Date.now() + 86_400_000 * 30).toISOString(),
+      createdAt: '2025-03-01T00:00:00Z',
+      aclTags: [],
+    },
+  ];
+}
 
-const apiKeys = [
-  {
-    id: '1',
-    createdAt: '2025-01-01T00:00:00Z',
-    prefix: 'test-api-key'.slice(0, 10),
-    expiration: new Date(Date.now() + 86_400_000 * 90).toISOString(),
-    lastSeen: new Date().toISOString(),
-  },
-];
+function createApiKeys() {
+  return [
+    {
+      id: '1',
+      createdAt: '2025-01-01T00:00:00Z',
+      prefix: 'test-api-key'.slice(0, 10),
+      expiration: new Date(Date.now() + 86_400_000 * 90).toISOString(),
+      lastSeen: new Date().toISOString(),
+    },
+  ];
+}
+
+let users;
+let nodes;
+let preAuthKeys;
+let apiKeys;
+
+function resetState() {
+  users = structuredClone(baseUsers);
+  nodes = createNodes(users);
+  preAuthKeys = createPreAuthKeys(users);
+  apiKeys = createApiKeys();
+}
+
+resetState();
 
 const policy = JSON.stringify({
   groups: { 'group:admin': ['alice'] },
@@ -186,6 +206,11 @@ const server = createServer((req, res) => {
     return json(res, { status: 'ok' });
   }
 
+  if (method === 'POST' && path === '/test/reset') {
+    resetState();
+    return json(res, { status: 'reset' });
+  }
+
   // Auth check
   if (!isAuthorised(req)) {
     return unauthorized(res);
@@ -210,8 +235,34 @@ const server = createServer((req, res) => {
   // ── POST endpoints ──────────────────────────────────────────────────────
   if (method === 'POST') {
     if (path === '/api/v1/user')             return json(res, { user: { ...users[0], id: '99', name: 'new-user' } });
-    if (path === '/api/v1/preauthkey')       return json(res, { preAuthKey: preAuthKeys[0] });
-    if (path === '/api/v1/preauthkey/expire') return json(res, {});
+    if (path === '/api/v1/preauthkey') {
+      // Parse request body to create appropriate preauth key
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          const user = data.user ? users.find(u => u.id === data.user) : null;
+          const aclTags = data.aclTags || [];
+          const newKey = {
+            user,
+            id: String(preAuthKeys.length + 1),
+            key: `pak_${user ? user.name : aclTags.length > 0 ? 'tagged' : 'global'}_${Date.now()}`,
+            reusable: data.reusable || false,
+            ephemeral: data.ephemeral || false,
+            used: false,
+            expiration: data.expiration || new Date(Date.now() + 86_400_000).toISOString(),
+            createdAt: new Date().toISOString(),
+            aclTags,
+          };
+          preAuthKeys.push(newKey);
+          return json(res, { preAuthKey: newKey });
+        } catch (e) {
+          return json(res, { preAuthKey: preAuthKeys[0] });
+        }
+      });
+      return; // Async handling
+    }
     if (path === '/api/v1/apikey')           return json(res, { apiKey: 'new-api-key-value' });
     if (path === '/api/v1/apikey/expire')    return json(res, {});
 
@@ -263,6 +314,18 @@ const server = createServer((req, res) => {
     if (deleteUserMatch) return json(res, {});
     const deleteNodeMatch = path.match(/^\/api\/v1\/node\/(\d+)$/);
     if (deleteNodeMatch) return json(res, {});
+    if (path === '/api/v1/preauthkey') {
+      const id = url.searchParams.get('id');
+      if (!id) {
+        return notFound(res);
+      }
+      const index = preAuthKeys.findIndex(pak => pak.id === id);
+      if (index !== -1) {
+        preAuthKeys.splice(index, 1);
+        return json(res, {});
+      }
+      return notFound(res);
+    }
   }
 
   return notFound(res);

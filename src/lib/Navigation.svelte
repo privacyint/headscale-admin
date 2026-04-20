@@ -10,6 +10,7 @@
 	import RawMdiSecurity from '~icons/mdi/security';
 	import RawMdiSettings from '~icons/mdi/settings';
 	import RawMdiTag from '~icons/mdi/tag';
+	import RawMdiKey from '~icons/mdi/key';
 
 	// import { ApiKeyInfoStore, ApiKeyStore, hasValidApi } from './Stores';
 	import { onMount, type Component } from 'svelte';
@@ -45,6 +46,7 @@
 	const allPages: Page[] = [
 		{ path: '/', name: 'Home', logo: RawMdiHome },
 		{ path: '/users', name: 'Users', logo: RawMdiPerson },
+		{ path: '/preauth', name: 'Preauth Keys', logo: RawMdiKey },
 		{ path: '/nodes', name: 'Nodes', logo: RawMdiDevices },
 		{ path: '/tags', name: 'Tags', logo: RawMdiTag },
 		{ path: '/deploy', name: 'Deploy', logo: RawMdiHomeGroupPlus },

@@ -48,7 +48,7 @@
 				value: App.preAuthKeys.value.filter(
 					(pak) => !isExpired(pak.expiration) && !(pak.used && !pak.reusable),
 				).length,
-				path: '/users',
+				path: '/preauth',
 			},
 			{
 				title: 'Total Nodes',
