@@ -21,6 +21,8 @@
 		.toString(16)
 		.padStart(6, '0')
 	);
+	const ownershipLabel = $derived(preAuthKey.user ? 'User' : 'ACL Tags');
+	const ownershipValue = $derived(preAuthKey.user ? preAuthKey.user.name : preAuthKey.aclTags.join(', '));
 
 	function isExpired(preAuthKey: PreAuthKey): boolean {
 		return new Date() > new Date(preAuthKey.expiration);
@@ -43,7 +45,7 @@
 			<span class="ml-2 text-lg font-semibold">ID: {preAuthKey.id}</span>
 		</div>
 		<div class="flex items-center font-bold">
-			User: {preAuthKey.user?.name || 'N/A'}
+			{ownershipLabel}: {ownershipValue}
 		</div>
 	</div>
 	<CardTileEntry title="Created:">

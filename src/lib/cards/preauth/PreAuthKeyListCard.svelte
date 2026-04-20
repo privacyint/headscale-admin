@@ -13,6 +13,9 @@
 
 	let { preAuthKey = $bindable(), open = $bindable(false) }: PreAuthKeyListCardProps = $props()
 
+    const ownershipLabel = $derived(preAuthKey.user ? 'User' : 'Tags')
+    const ownershipValue = $derived(preAuthKey.user ? preAuthKey.user.name : preAuthKey.aclTags.join(', '))
+
 </script>
 
 <AccordionItem
@@ -25,7 +28,7 @@
 	<svelte:fragment slot="summary">
 		<div class="grid">
 			<CardListEntry title="ID: {preAuthKey.id}">
-				<span class="font-bold">User: {preAuthKey.user?.name || 'N/A'}</span>
+				<span class="font-bold">{ownershipLabel}: {ownershipValue}</span>
 			</CardListEntry>
 		</div>
 	</svelte:fragment>

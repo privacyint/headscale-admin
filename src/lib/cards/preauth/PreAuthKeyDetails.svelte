@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CardListEntry from '../CardListEntry.svelte';
+	import CardSeparator from '../CardSeparator.svelte';
 	import type { PreAuthKey } from '$lib/common/types';
 	import { onMount } from 'svelte';
 
@@ -9,6 +10,8 @@
 	let { preAuthKey }: PreAuthKeyDetailsProps = $props()
 
 	let pakIsExpired = $state(isExpired(preAuthKey))
+	const ownershipLabel = $derived(preAuthKey.user ? 'User:' : 'Tags:')
+	const ownershipValue = $derived(preAuthKey.user ? preAuthKey.user.name : preAuthKey.aclTags.join(', '))
 
 	function isExpired(preAuthKey: PreAuthKey): boolean {
 		return new Date() > new Date(preAuthKey.expiration);
@@ -25,32 +28,36 @@
 	})
 </script>
 
-<CardListEntry title="Key">
-	<span class="font-mono text-sm">{preAuthKey.key.substring(0, 10)}…</span>
-</CardListEntry>
-<CardListEntry title="User">
-	<span>{preAuthKey.user?.name || 'N/A'}</span>
-</CardListEntry>
-<CardListEntry title="Expiration">
-	<span class="{pakIsExpired ? 'text-red-500' : ''}">{new Date(preAuthKey.expiration).toLocaleString()}</span>
-</CardListEntry>
-<CardListEntry title="Used">
-	<span class="badge {preAuthKey.used ? 'variant-filled-success' : 'variant-filled-surface'}">
-		{preAuthKey.used ? 'Yes' : 'No'}
-	</span>
-</CardListEntry>
-<CardListEntry title="Ephemeral">
-	<span class="badge {preAuthKey.ephemeral ? 'variant-filled-secondary' : 'variant-filled-surface'}">
-		{preAuthKey.ephemeral ? 'Yes' : 'No'}
-	</span>
-</CardListEntry>
-<CardListEntry title="Reusable">
-	<span class="badge {preAuthKey.reusable ? 'variant-filled-tertiary' : 'variant-filled-surface'}">
-		{preAuthKey.reusable ? 'Yes' : 'No'}
-	</span>
-</CardListEntry>
-{#if preAuthKey.aclTags.length > 0}
-<CardListEntry title="ACL Tags">
-	<span>{preAuthKey.aclTags.join(', ')}</span>
-</CardListEntry>
-{/if}
+<div class="grid grid-cols-1">
+	<CardListEntry title="Key:" top={true} valueClasses="text-right">
+		<div class="grid grid-cols-1">
+			<span class="block w-full font-mono text-sm whitespace-normal text-right [overflow-wrap:anywhere]">{preAuthKey.key}</span>
+		</div>
+	</CardListEntry>
+	<CardSeparator />
+	<CardListEntry title={ownershipLabel}>
+		<span>{ownershipValue}</span>
+	</CardListEntry>
+	<CardSeparator />
+	<CardListEntry title="Expiration:">
+		<span class="{pakIsExpired ? 'text-red-500' : ''}">{new Date(preAuthKey.expiration).toLocaleString()}</span>
+	</CardListEntry>
+	<CardSeparator />
+	<CardListEntry title="Used:">
+		<span class="badge justify-self-end {preAuthKey.used ? 'variant-filled-success' : 'variant-filled-surface'}">
+			{preAuthKey.used ? 'Yes' : 'No'}
+		</span>
+	</CardListEntry>
+	<CardSeparator />
+	<CardListEntry title="Ephemeral:">
+		<span class="badge justify-self-end {preAuthKey.ephemeral ? 'variant-filled-secondary' : 'variant-filled-surface'}">
+			{preAuthKey.ephemeral ? 'Yes' : 'No'}
+		</span>
+	</CardListEntry>
+	<CardSeparator />
+	<CardListEntry title="Reusable:">
+		<span class="badge justify-self-end {preAuthKey.reusable ? 'variant-filled-tertiary' : 'variant-filled-surface'}">
+			{preAuthKey.reusable ? 'Yes' : 'No'}
+		</span>
+	</CardListEntry>
+</div>

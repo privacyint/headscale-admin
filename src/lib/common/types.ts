@@ -5,7 +5,7 @@ export interface Named {
 	givenName?: string;
 }
 
-export type ItemTypeName = 'user' | 'node' | 'tag';
+export type ItemTypeName = 'user' | 'node' | 'tag' | 'preauth-key';
 
 export type User = {
 	id: string;
@@ -58,8 +58,7 @@ export function getTypeName(item: Named): ItemTypeName {
 		return 'user';
 	}
 	if ('key' in item) {
-		// PreAuthKey
-		return getPreAuthKeyType(item as PreAuthKey) === 'user' ? 'user' : 'tag';
+		return 'preauth-key';
 	}
 	throw new Error('Item Provided is an Invalid Type');
 }

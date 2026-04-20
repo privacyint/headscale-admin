@@ -26,6 +26,10 @@
 		return str.toLowerCase().replace(/\b\w/g, (s) => s.toUpperCase());
 	}
 
+	function deleteLabel(typeName: ItemTypeName) {
+		return typeName === 'preauth-key' ? 'PreAuth Key' : titleCase(typeName);
+	}
+
 	async function deleteItem() {
 		show = false;
 		const name = item.name;
@@ -62,6 +66,6 @@
 	}
 </script>
 
-<CardListEntry title={`Delete ${titleCase(prefix)}:`}>
+<CardListEntry title={`Delete ${deleteLabel(prefix)}:`}>
 	<Delete func={deleteItem} />
 </CardListEntry>

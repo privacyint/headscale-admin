@@ -114,7 +114,7 @@ test.describe('preauth keys', () => {
     await page.getByRole('button', { name: 'Close' }).click();
 
     // Check that the tagged key was created
-    await expect(page.getByText('User: N/A').first()).toBeVisible(); // User should be N/A for tagged keys
+    await expect(page.getByText('ACL Tags: tag1, tag2').first()).toBeVisible();
   });
 
   test('preauth key details can be viewed', async ({ page }) => {
