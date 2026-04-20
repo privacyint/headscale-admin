@@ -164,7 +164,7 @@ test.describe('preauth keys', () => {
     await page.getByRole('button', { name: 'Close' }).click();
 
     // Click the User sort button
-    await page.locator('button').filter({ hasText: 'User' }).click();
+    await page.locator('.btn-group').getByText('User').click();
 
     // The key should still be visible
     await expect(page.getByText('User: alice').first()).toBeVisible();
