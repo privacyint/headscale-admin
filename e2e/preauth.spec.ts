@@ -354,7 +354,7 @@ test.describe('deploy page preauth integration', () => {
     await page.getByRole('checkbox', { name: 'PreAuth Key' }).check();
 
     // Select alice user
-    await page.locator('select').first().selectOption('alice');
+    await page.locator('select').first().selectOption('1');
 
     // Click Create New button
     await page.getByRole('button', { name: 'Create New' }).click();
@@ -377,7 +377,7 @@ test.describe('deploy page preauth integration', () => {
     await page.getByRole('checkbox', { name: 'PreAuth Key' }).check();
 
     // Select alice user
-    await page.locator('select').first().selectOption('alice');
+    await page.locator('select').first().selectOption('1');
 
     // Select the existing key
     await page.locator('select').nth(1).selectOption('pak_alice_0001');
