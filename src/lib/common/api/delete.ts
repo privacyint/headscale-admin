@@ -1,5 +1,5 @@
 import { apiDelete, apiPost } from './base';
-import type { User, Node, PreAuthKey } from '$lib/common/types';
+import { getPreAuthKeyDisplayName, type User, type Node, type PreAuthKey } from '$lib/common/types';
 import { debug } from '../debug';
 import { API_URL_APIKEY, API_URL_NODE, API_URL_USER, API_URL_PREAUTHKEY } from './url';
 import { App } from '$lib/States.svelte';
@@ -49,7 +49,7 @@ export async function deletePreAuthKey(preAuthKey: PreAuthKey): Promise<boolean>
 		await apiDelete(`${API_URL_PREAUTHKEY}?id=${encodeURIComponent(preAuthKey.id)}`);
 		// Remove from App.preAuthKeys if it exists
 		App.preAuthKeys.value = App.preAuthKeys.value.filter((pak: PreAuthKey) => pak.id != preAuthKey.id);
-		debug('Deleted PreAuthKey "' + preAuthKey.name + '"');
+		debug('Deleted PreAuthKey "' + getPreAuthKeyDisplayName(preAuthKey) + '"');
 		return true;
 	} catch (error) {
 		debug(error);

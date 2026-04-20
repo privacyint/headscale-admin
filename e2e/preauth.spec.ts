@@ -324,6 +324,10 @@ test.describe('preauth keys', () => {
     // Confirm deletion by clicking the check icon
     await page.getByTestId('confirm-delete').first().click();
 
+    // Deletion toast should use a derived label, not an undefined runtime property.
+    await expect(page.getByText(/^Deleted PreAuth Key /)).toBeVisible();
+    await expect(page.getByText(/undefined/)).not.toBeVisible();
+
     // Check that the confirm button is no longer visible (deletion completed)
     await expect(page.getByTestId('confirm-delete')).not.toBeVisible();
   });

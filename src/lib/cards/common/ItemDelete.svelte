@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ItemTypeName, Named, PreAuthKey } from '$lib/common/types';
-	import { getTypeName, isUser, isNode } from '$lib/common/types';
+	import { getPreAuthKeyDisplayName, getTypeName, isUser, isNode } from '$lib/common/types';
 
 	import CardListEntry from '../CardListEntry.svelte';
 
@@ -32,10 +32,10 @@
 
 	async function deleteItem() {
 		show = false;
-		const name = item.name;
 		const id = item.id;
 
 		if (isUser(item)) {
+			const name = item.name;
 			if (await deleteUser(item)) {
 				toastSuccess(`Deleted User "${name}" (ID: ${id})`, ToastStore);
 				DrawerStore.close()
@@ -48,6 +48,7 @@
 			}
 		}
 		if (isNode(item)) {
+			const name = item.name;
 			if (await deleteNode(item)) {
 				toastSuccess(`Deleted machine "${name}" (${id})`, ToastStore);
 				DrawerStore.close()
@@ -56,6 +57,7 @@
 			}
 		}
 		if ('key' in item) {
+			const name = getPreAuthKeyDisplayName(item as PreAuthKey);
 			if (await deletePreAuthKey(item as PreAuthKey)) {
 				toastSuccess(`Deleted PreAuth Key "${name}" (${id})`, ToastStore);
 				DrawerStore.close()

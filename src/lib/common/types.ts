@@ -106,6 +106,16 @@ export class PreAuthKey implements Named {
 	}
 }
 
+export function getPreAuthKeyDisplayName(preAuthKey: Pick<PreAuthKey, 'user' | 'aclTags'>): string {
+	if (preAuthKey.user) {
+		return `${preAuthKey.user.name} PreAuth Key`;
+	}
+	if (preAuthKey.aclTags.length > 0) {
+		return `Tagged PreAuth Key (${preAuthKey.aclTags.join(', ')})`;
+	}
+	return 'PreAuth Key';
+}
+
 export function getPreAuthKeyType(key: PreAuthKey): 'user' | 'tag' {
 	if (key.user) {
 		return 'user';
