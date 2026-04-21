@@ -54,7 +54,7 @@
 		acl.createSshRule(rule)
 		if (acl.ssh !== undefined){
 			debug("created new SSH rule at index " + (acl.ssh.length - 1).toString())
-			toastSuccess('Created SSH Rule #' + acl.acls.length, ToastStore)
+			toastSuccess('Created SSH Rule #' + acl.ssh.length, ToastStore)
 		}
 	}
 </script>
