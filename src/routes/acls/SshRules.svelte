@@ -35,10 +35,11 @@
 			}
 
 			const r = RegExp(sshRuleFilterString)
-			return rulesIndexed.filter(({rule}) => {
+			return rulesIndexed.filter(({rule, idx}) => {
 				return rule.src.some(src => r.test(src)) ||
 				rule.dst.some(dst => r.test(dst)) ||
-				rule.users.some(user => r.test(user))
+				rule.users.some(user => r.test(user)) ||
+				r.test(ACLBuilder.getSshRuleTitle(rule, idx))
 			})
 		} catch {
 			debug(`SSH Rule Regex "${sshRuleFilterString}" is invalid`);
@@ -47,7 +48,10 @@
 	});
 
 	function newSshRule() {
-		acl.createSshRule(ACLBuilder.DefaultSshRule())
+		const rule = ACLBuilder.DefaultSshRule()
+		ACLBuilder.addSshRuleMeta(rule)
+
+		acl.createSshRule(rule)
 		if (acl.ssh !== undefined){
 			debug("created new SSH rule at index " + (acl.ssh.length - 1).toString())
 			toastSuccess('Created SSH Rule #' + acl.acls.length, ToastStore)

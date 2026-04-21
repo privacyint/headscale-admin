@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { Autocomplete, getToastStore, InputChip, popup, Tab, TabGroup, type PopupSettings } from '@skeletonlabs/skeleton';
-	import { ACLBuilder, type AclPolicy, type AclSshRule } from '$lib/common/acl.svelte';
+	import { ACLBuilder, HAMetaDefault, type AclSshRule } from '$lib/common/acl.svelte';
 	import { toastSuccess, toastError, toOptions } from '$lib/common/funcs';
 	import MultiSelect from '$lib/parts/MultiSelect.svelte';
 	import Delete from '$lib/parts/Delete.svelte';
 	import CardListContainer from '$lib/cards/CardListContainer.svelte';
 	import { debug } from '$lib/common/debug';
-	import { get } from 'svelte/store';
 
 	import RawMdiGroups from '~icons/mdi/account-group';
 	import RawMdiPencil from '~icons/mdi/pencil';
@@ -51,6 +50,29 @@
 			set users(users: string[]) { acl.setSshRuleUsers(idx, users) },
 		}
 	});
+
+	const opener = $derived.by(() => {
+		return {
+			get open() {
+				ACLBuilder.addSshRuleMeta(rule.rule)
+				return rule.rule["#ha-meta"] !== undefined
+					&& rule.rule["#ha-meta"].open
+			},
+			set open(open: boolean) {
+				ACLBuilder.addSshRuleMeta(rule.rule)
+				if (rule.rule["#ha-meta"] !== undefined) {
+					rule.rule["#ha-meta"].open = open
+				}
+			},
+		}
+	})
+
+	const ruleName = $derived.by(() => {
+		let state = $state({
+			value: rule.rule["#ha-meta"]?.name ?? "",
+		})
+		return state;
+	})
 
 	let deleting = $state(false);
 
@@ -132,11 +154,32 @@
 	function delUsername(username: string) {
 		rule.users = rule.users.filter(u => u != username)
 	}
+
+	function setRuleName(name: string) {
+		if(rule.rule["#ha-meta"] === undefined) {
+			rule.rule["#ha-meta"] = HAMetaDefault
+		}
+		rule.rule["#ha-meta"].name = name
+	}
 </script>
 
-<ListEntry id={idx.toString()} name={"SSH Rule #" + (idx + 1)} logo={RawMdiSecurity} bind:open>
+<ListEntry id={idx.toString()} name={ACLBuilder.getSshRuleTitle(rule.rule, idx)} logo={RawMdiSecurity} bind:open={opener.open}>
 	{#snippet children()}
 	<CardListContainer>
+		<div class="mb-6">
+			<h3 class="font-mono mb-2 flex flex-row items-center">
+				<label for={'ssh-rule-name-' + idx.toString()}>Name:</label>
+				<input
+					type="text"
+					id={'ssh-rule-name-' + idx.toString()}
+					name={'ssh-rule-name-' + idx.toString()}
+					class="input text-xs rounded-md ml-4"
+					autocomplete="off"
+					bind:value={ruleName.value}
+					oninput={() => setRuleName(ruleName.value)}
+				/>
+			</h3>
+		</div>
 		<h3 class="font-mono mb-2 flex flex-row items-center">
 			<span>Sources:</span>
 		</h3>

@@ -42,6 +42,7 @@ export type AclPolicy = {
     dst: string[],
 }
 export type AclSshRule = {
+    "#ha-meta"?: HAMeta,
     action: 'accept',
     src: string[],
     dst: string[],
@@ -116,6 +117,13 @@ export class ACLBuilder implements ACL {
 			policy["#ha-meta"] = HAMetaDefault
 		}
         return policy["#ha-meta"] !== undefined
+    }
+
+    static addSshRuleMeta(rule: AclSshRule): boolean {
+		if (rule["#ha-meta"] === undefined){
+			rule["#ha-meta"] = HAMetaDefault
+		}
+        return rule["#ha-meta"] !== undefined
     }
 
     static fromPolicy(acl: ACL | string): ACLBuilder {
@@ -689,6 +697,7 @@ export class ACLBuilder implements ACL {
 
     public static DefaultSshRule(): AclSshRule {
         return {
+            "#ha-meta": HAMetaDefault,
             action: "accept",
             src: [],
             dst: [],
@@ -703,6 +712,14 @@ export class ACLBuilder implements ACL {
 		}
 		return pfx + pol["#ha-meta"].name
 	}
+
+    public static getSshRuleTitle(rule: AclSshRule, idx: number): string {
+        const pfx = "#" + (idx + 1) + ": "
+        if (rule["#ha-meta"] === undefined || rule["#ha-meta"].name === "") {
+            return pfx + "SSH Rule #" + (idx + 1)
+        }
+        return pfx + rule["#ha-meta"].name
+    }
 
     setSshRuleSrc(idx: number, src: string[]) {
         this.validateSshRuleIndex(idx)
