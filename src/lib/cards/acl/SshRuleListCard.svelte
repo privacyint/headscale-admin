@@ -137,7 +137,7 @@
 
 	function addSrc(host: string) {
 		if (host.length === 0) {
-			throw new Error("Invailid Host Provided")
+			throw new Error("Invalid Host Provided")
 		}
 
 		rule.src.push(host)
@@ -145,7 +145,7 @@
 
 	function addDst(host: string) {
 		if (host.length === 0) {
-			throw new Error("Invailid Host Provided")
+			throw new Error("Invalid Host Provided")
 		}
 
 		rule.dst.push(host)

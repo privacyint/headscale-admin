@@ -144,7 +144,7 @@
 
 	function addSrc(host: string) {
 		if (host.length === 0) {
-			throw new Error("Invailid Host Provided")
+			throw new Error("Invalid Host Provided")
 		}
 
 		policy.src.push(host)
@@ -152,7 +152,7 @@
 
 	function addDst(host: string, ports: string) {
 		if (host.length === 0) {
-			throw new Error("Invailid Host Provided")
+			throw new Error("Invalid Host Provided")
 		}
 
 		if (policy.proto === "icmp") {
