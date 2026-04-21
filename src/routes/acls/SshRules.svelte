@@ -62,7 +62,7 @@
 <CardListPage>
 	<div class="mb-2">
 		<div class="flex flex-row space-x-2">
-			<button disabled={loading} class="btn-icon rounded-md variant-filled-success disabled:opacity-50 w-8 text-xl" onclick={() => { 
+			<button aria-label="Save SSH Rules" disabled={loading} class="btn-icon rounded-md variant-filled-success disabled:opacity-50 w-8 text-xl" onclick={() => { 
 				saveConfig(acl, ToastStore, {setLoadingTrue: () => { loading = true}, setLoadingFalse: ()=> { loading = false }})
 			}}>
 				<RawMdiSave />
