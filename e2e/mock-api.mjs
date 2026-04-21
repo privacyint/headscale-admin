@@ -141,23 +141,23 @@ let users;
 let nodes;
 let preAuthKeys;
 let apiKeys;
+let policy;
 
 function resetState() {
   users = structuredClone(baseUsers);
   nodes = createNodes(users);
   preAuthKeys = createPreAuthKeys(users);
   apiKeys = createApiKeys();
+  policy = JSON.stringify({
+    groups: { 'group:admin': ['alice'] },
+    hosts: {},
+    acls: [{ action: 'accept', src: ['group:admin'], dst: ['*:*'] }],
+    tagOwners: {},
+    ssh: [],
+  });
 }
 
 resetState();
-
-const policy = JSON.stringify({
-  groups: { 'group:admin': ['alice'] },
-  hosts: {},
-  acls: [{ action: 'accept', src: ['group:admin'], dst: ['*:*'] }],
-  tagOwners: {},
-  ssh: [],
-});
 
 // ── Router ──────────────────────────────────────────────────────────────────
 
@@ -305,7 +305,22 @@ const server = createServer((req, res) => {
 
   // ── PUT endpoints ───────────────────────────────────────────────────────
   if (method === 'PUT') {
-    if (path === '/api/v1/policy') return json(res, { policy, updatedAt: new Date().toISOString() });
+    if (path === '/api/v1/policy') {
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (typeof data.policy === 'string') {
+            policy = data.policy;
+          }
+        } catch {
+          // Keep the previous policy when the request body cannot be parsed.
+        }
+        return json(res, { policy, updatedAt: new Date().toISOString() });
+      });
+      return;
+    }
   }
 
   // ── DELETE endpoints ────────────────────────────────────────────────────
