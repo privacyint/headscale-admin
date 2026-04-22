@@ -272,7 +272,7 @@ test.describe('direct URL access (no white screen)', () => {
     await seedAuth(page);
   });
 
-  const routes = ['/', '/nodes/', '/users/', '/tags/', '/settings/', '/deploy/', '/routes/', '/acls/'];
+  const routes = ['/', '/nodes/', '/users/', '/tags/', '/settings/', '/deploy/', '/routes/', '/acls/', '/visualise/'];
 
   for (const route of routes) {
     test(`${route} renders content (not blank)`, async ({ page }) => {

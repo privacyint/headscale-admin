@@ -152,10 +152,14 @@ function resetState() {
 resetState();
 
 const policy = JSON.stringify({
-  groups: { 'group:admin': ['alice'] },
+  groups: { 'group:admin': ['alice'], 'group:dev': ['bob'] },
   hosts: {},
-  acls: [{ action: 'accept', src: ['group:admin'], dst: ['*:*'] }],
-  tagOwners: {},
+  acls: [
+    { action: 'accept', src: ['group:admin'], dst: ['*:*'] },
+    { action: 'accept', src: ['tag:server'], dst: ['tag:infra:22'] },
+    { action: 'accept', src: ['bob'], dst: ['tag:server:443'] },
+  ],
+  tagOwners: { 'tag:server': ['group:admin'], 'tag:infra': ['alice'] },
   ssh: [],
 });
 
