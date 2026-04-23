@@ -2,7 +2,8 @@ import { Mutex } from 'async-mutex';
 
 import { browser } from '$app/environment';
 import type { User, Node, PreAuthKey, ApiKeyInfo, ApiApiKeys, Deployment } from '$lib/common/types';
-import { getUsers, getPreAuthKeys, getNodes } from '$lib/common/api/get';
+import { TAGGED_DEVICES_USER_NAME } from '$lib/common/types';
+import { getUsers, getPreAuthKeys, getNodes, getNodesForUser } from '$lib/common/api/get';
 import type { ToastStore } from '@skeletonlabs/skeleton';
 import { apiGet } from './common/api';
 import { arraysEqual, clone, toastError, toastWarning } from './common/funcs';
@@ -189,6 +190,39 @@ export class HeadscaleAdmin {
         if (nodes === undefined) {
             nodes = await getNodes()
         }
+
+        // Resolve real owners for nodes assigned to the tagged-devices user.
+        // For each real user, query their node list; any node that appears is
+        // owned by that user regardless of the tagged-devices reassignment.
+        const taggedNodes = nodes.filter(
+            (n) => n.user.name === TAGGED_DEVICES_USER_NAME,
+        );
+        if (taggedNodes.length > 0) {
+            const realUsers = this.users.value.filter(
+                (u) => u.name !== TAGGED_DEVICES_USER_NAME,
+            );
+            const nodeIdToUser = new Map<string, User>();
+            const results = await Promise.allSettled(
+                realUsers.map(async (user) => {
+                    try {
+                        const userNodes = await getNodesForUser(user.name);
+                        for (const un of userNodes) {
+                            nodeIdToUser.set(un.id, user);
+                        }
+                    } catch {
+                        // If the per-user query fails, we simply don't resolve
+                        // the original owner for those nodes.
+                    }
+                }),
+            );
+            for (const node of nodes) {
+                const realUser = nodeIdToUser.get(node.id);
+                if (realUser && node.user.name === TAGGED_DEVICES_USER_NAME) {
+                    node.originalUser = realUser;
+                }
+            }
+        }
+
         if(!arraysEqual(this.nodes.value, nodes)){
             this.nodes.value = nodes
             return true

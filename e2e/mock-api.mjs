@@ -44,6 +44,18 @@ const users = [
   },
 ];
 
+/** Virtual user that Headscale assigns to nodes carrying tags. */
+const taggedDevicesUser = {
+  id: '2147455555',
+  name: 'tagged-devices',
+  createdAt: '0001-01-01T00:00:00Z',
+  displayName: 'Tagged Devices',
+  email: '',
+  providerId: '',
+  provider: '',
+  profilePicUrl: '',
+};
+
 const nodes = [
   {
     id: '1',
@@ -105,7 +117,37 @@ const nodes = [
     subnetRoutes: [],
     tags: ['tag:server', 'tag:infra'],
   },
+  // Tagged-device node: originally owned by alice, now under tagged-devices
+  {
+    id: '4',
+    machineKey: 'mkey:tag001',
+    nodeKey: 'nodekey:tag002',
+    discoKey: 'discokey:tag003',
+    ipAddresses: ['100.64.0.4', 'fd7a:115c:a1e0::4'],
+    name: 'alice-tagged-node',
+    user: taggedDevicesUser,
+    lastSeen: new Date().toISOString(),
+    expiry: '0001-01-01T00:00:00Z',
+    preAuthKey: null,
+    createdAt: '2025-04-01T00:00:00Z',
+    registerMethod: 'REGISTER_METHOD_AUTH_KEY',
+    givenName: 'alice-tagged-node',
+    online: true,
+    approvedRoutes: [],
+    availableRoutes: [],
+    subnetRoutes: [],
+    tags: ['tag:manual'],
+  },
 ];
+
+/**
+ * Map of user name → node IDs that the server considers owned by that user
+ * (even if the node's .user is tagged-devices).
+ */
+const userNodeMap = {
+  alice: ['1', '3', '4'],
+  bob: ['2'],
+};
 
 const preAuthKeys = [
   {
@@ -194,7 +236,15 @@ const server = createServer((req, res) => {
   // ── GET endpoints ───────────────────────────────────────────────────────
   if (method === 'GET') {
     if (path === '/api/v1/user')       return json(res, { users });
-    if (path === '/api/v1/node')       return json(res, { nodes });
+    if (path === '/api/v1/node') {
+      const userParam = url.searchParams.get('user');
+      if (userParam) {
+        // Filter nodes by real owner (simulates Headscale's ?user= behaviour)
+        const ids = userNodeMap[userParam] ?? [];
+        return json(res, { nodes: nodes.filter((n) => ids.includes(n.id)) });
+      }
+      return json(res, { nodes });
+    }
     if (path === '/api/v1/preauthkey') return json(res, { preAuthKeys });
     if (path === '/api/v1/apikey')     return json(res, { apiKeys });
     if (path === '/api/v1/policy')     return json(res, { policy, updatedAt: new Date().toISOString() });

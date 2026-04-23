@@ -4,7 +4,18 @@ import IPAddr from 'ipaddr.js';
 import { debug } from './debug';
 import DOMPurify from 'dompurify';
 import type { Direction, Node, OnlineStatus, Tag, User } from './types';
+import { getNodeOwner } from './types';
 import { App } from '$lib/States.svelte';
+
+/**
+ * Return all nodes whose real owner matches the given user.
+ * This accounts for tagged-device nodes by checking originalUser.
+ */
+export function getNodesForUser(nodes: Node[], user: User): Node[] {
+	return nodes.filter(
+		(n) => n.user.id === user.id || n.originalUser?.id === user.id,
+	);
+}
 
 export function clone<T>(item: T): T {
 	return JSON.parse(JSON.stringify(item)) as T
@@ -370,9 +381,10 @@ export function getSortedNodes(nodes: Node[], sortMethod: string, sortDirection:
 
 export function filterUser(user: User, filterString: string, onlineStatus: OnlineStatus = "all"): boolean {
 	try {
+		const userNodes = getNodesForUser(App.nodes.value, user);
 		if (
-			(onlineStatus === 'online' && !App.nodes.value.filter((n) => n.user.id === user.id).some((n) => n.online)) ||
-			(onlineStatus === 'offline' && App.nodes.value.filter((n) => n.user.id === user.id).some((n) => n.online))
+			(onlineStatus === 'online' && !userNodes.some((n) => n.online)) ||
+			(onlineStatus === 'offline' && userNodes.some((n) => n.online))
 		) {
 			return false;
 		}

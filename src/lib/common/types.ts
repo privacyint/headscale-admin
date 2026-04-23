@@ -50,6 +50,24 @@ export function getUserDisplay(user: User): string {
 	}
 }
 
+/** Whether this node's current user is the synthetic tagged-devices user. */
+export function isTaggedDevice(node: Node): boolean {
+	return node.user.name === TAGGED_DEVICES_USER_NAME;
+}
+
+/** Return the real owner of a node (originalUser when available, else node.user). */
+export function getNodeOwner(node: Node): User {
+	return node.originalUser ?? node.user;
+}
+
+/**
+ * Whether this node is a tagged device with no known real owner.
+ * Indicates a truly orphaned node that only exists under tagged-devices.
+ */
+export function isOrphanTaggedDevice(node: Node): boolean {
+	return isTaggedDevice(node) && node.originalUser === undefined;
+}
+
 export function getTypeName(item: Named): ItemTypeName {
 	if (isNode(item)) {
 		return 'node';
@@ -124,6 +142,13 @@ export type ApiPolicy = {
 	updatedAt?: string;
 }
 
+/**
+ * Well-known user name that Headscale assigns to nodes which carry tags.
+ * The node still belongs to its original owner on the server, but the API
+ * returns this synthetic user in the `user` field.
+ */
+export const TAGGED_DEVICES_USER_NAME = 'tagged-devices';
+
 export type Node = {
 	id: string;
 	machineKey: string;
@@ -147,6 +172,8 @@ export type Node = {
 	availableRoutes: string[];
 	subnetRoutes: string[];
 	tags: string[];
+	/** The real owner when the node has been reassigned to tagged-devices. */
+	originalUser?: User;
 };
 
 export type ApiNodes = {

@@ -8,10 +8,12 @@
 
 	import Page from '$lib/page/Page.svelte';
 	import type { User, Direction, OnlineStatus } from '$lib/common/types';
+	import { isTaggedDevice } from '$lib/common/types';
 	import SortBtn from '$lib/parts/SortBtn.svelte';
 	import { App } from '$lib/States.svelte';
-	import { getSortedFilteredUsers } from '$lib/common/funcs';
+	import { getSortedFilteredUsers, getNodesForUser } from '$lib/common/funcs';
 	import FilterOnlineBtn from '$lib/parts/FilterOnlineBtn.svelte';
+	import RawMdiTag from '~icons/mdi/tag';
 
 	let showCreate = $state(false);
 	const layout = $derived(App.layoutUser.value)
@@ -20,11 +22,20 @@
 	let sortMethod = $state('id');
 	let sortDirection = $state<Direction>('up');
 	let filterOnlineStatus = $state<OnlineStatus>('all');
+	let filterTagged = $state(false);
 	let filterString = $state('');
 	
-	const usersSortedFiltered = $derived(
-		getSortedFilteredUsers(App.users.value, filterString, sortMethod, sortDirection, filterOnlineStatus)
-	)
+	const usersSortedFiltered = $derived.by(() => {
+		let users = getSortedFilteredUsers(
+			App.users.value, filterString, sortMethod, sortDirection, filterOnlineStatus,
+		);
+		if (filterTagged) {
+			users = users.filter((u) =>
+				getNodesForUser(App.nodes.value, u).some(isTaggedDevice),
+			);
+		}
+		return users;
+	})
 
 	const Outer = $derived(layout == 'list' ? CardListPage : CardTilePage);
 	const Inner = $derived(layout == 'list' ? UserListCard : UserTileCard);
@@ -58,6 +69,15 @@
 		<FilterOnlineBtn bind:value={filterOnlineStatus} status="all" name="All" />
 		<FilterOnlineBtn bind:value={filterOnlineStatus} status="online" name="Online" />
 		<FilterOnlineBtn bind:value={filterOnlineStatus} status="offline" name="Offline" />
+	</div>
+	<div class="inline-flex ml-2">
+		<button
+			class="btn btn-sm rounded-md {filterTagged ? 'variant-filled-warning' : 'variant-ghost-secondary'}"
+			onclick={() => { filterTagged = !filterTagged }}
+		>
+			<RawMdiTag class="pr-1" />
+			Tagged
+		</button>
 	</div>
 
 	<Outer>

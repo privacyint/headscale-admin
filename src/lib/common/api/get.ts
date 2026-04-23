@@ -44,6 +44,13 @@ export async function getNodes(): Promise<Node[]> {
 	return nodes;
 }
 
+export async function getNodesForUser(userName: string): Promise<Node[]> {
+	const { nodes } = await apiGet<ApiNodes>(
+		`${API_URL_NODE}?user=${encodeURIComponent(userName)}`,
+	);
+	return nodes;
+}
+
 export async function getPolicy(): Promise<string> {
 	const { policy } = await apiGet<ApiPolicy>(API_URL_POLICY)
 	return policy

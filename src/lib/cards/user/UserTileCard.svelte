@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { xxHash32 } from 'js-xxhash';
 	import { type User, type Node, getUserDisplay } from '$lib/common/types';
-	import { dateToStr, openDrawer } from '$lib/common/funcs';
+	import { isTaggedDevice } from '$lib/common/types';
+	import { dateToStr, openDrawer, getNodesForUser } from '$lib/common/funcs';
 	import { getDrawerStore } from '@skeletonlabs/skeleton';
 	import CardTileContainer from '../CardTileContainer.svelte';
 	import OnlineUserIndicator from '$lib/parts/OnlineUserIndicator.svelte';
@@ -12,7 +13,9 @@
 	}
 	let { user = $bindable() }: UserTileCardProps = $props()
 
-	const nodeCount = $derived(App.nodes.value.filter((n) => n.user.id === user.id).length);
+	const userNodes = $derived(getNodesForUser(App.nodes.value, user));
+	const nodeCount = $derived(userNodes.length);
+	const taggedCount = $derived(userNodes.filter(isTaggedDevice).length);
 	const drawerStore = getDrawerStore();
 	const color = $derived(
 		(xxHash32(user.id + ':' + user.name, 0xbeefbabe) & 0xff_ff_ff)
@@ -39,8 +42,11 @@
 	</div>
 	<div class="flex justify-between items-center mb-2 mt-2">
 		<div class="flex items-center font-semibold">Nodes:</div>
-		<div class="flex items-center">
+		<div class="flex items-center gap-2">
 			{nodeCount}
+			{#if taggedCount > 0}
+				<span class="badge variant-soft-warning text-xs px-1.5 py-0.5">{taggedCount} tagged</span>
+			{/if}
 		</div>
 	</div>
 	<hr style="background-color: #{color}" class="w-full h-0.5 mx-auto my-4 border-0 rounded" />
