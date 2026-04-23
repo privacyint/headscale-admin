@@ -94,6 +94,11 @@ test.describe('unauthenticated', () => {
     await expect(page.getByRole('textbox', { name: 'API Key' })).toBeVisible();
   });
 
+  test('prompt appears on /preauth/', async ({ page }) => {
+    await page.goto('/preauth/');
+    await expect(page.getByRole('textbox', { name: 'API Key' })).toBeVisible();
+  });
+
   test('invalid API key shows error', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('textbox', { name: 'API URL' }).fill(MOCK_URL);
@@ -168,6 +173,11 @@ test.describe('authenticated navigation', () => {
   test('/deploy/ renders deploy page', async ({ page }) => {
     await page.goto('/deploy/');
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('/preauth/ renders preauth keys page', async ({ page }) => {
+    await page.goto('/preauth/');
+    await expect(page.locator('.font-mono').getByText('Preauth Keys')).toBeVisible({ timeout: 10000 });
   });
 
   test('/routes/ renders routes page', async ({ page }) => {

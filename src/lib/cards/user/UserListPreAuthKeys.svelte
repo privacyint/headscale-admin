@@ -32,7 +32,7 @@
 	let expires = $state(defaultExpires());
 	const preAuthKeys = $derived(
 		App.preAuthKeys.value.filter((p) => {
-			return (p.user.id === user.id) 
+			return (p.user?.id === user.id) 
 				&& (!hideInvalid || (hideInvalid && !isExpiredOrUsed(p)));
 		})
 	);
@@ -95,6 +95,7 @@
 								try {
 									const preAuthKey = await createPreAuthKey(
 										user,
+										null,
 										checked.ephemeral,
 										checked.reusable,
 										expires,

@@ -176,6 +176,7 @@
 		<div class="card p-4 variant-ghost-surface">
 			<h3 class="font-bold text-lg mb-3">Headscale Server</h3>
 			{#if version}
+				{@const OsIcon = osIcon(version.go.os)}
 				<div class="space-y-2 text-sm">
 					<div class="flex justify-between items-center">
 						<span class="font-semibold">Version:</span>
@@ -191,7 +192,6 @@
 					<div class="flex justify-between items-center">
 						<span class="font-semibold">Operating System:</span>
 						<span class="flex items-center gap-1.5">
-							{@const OsIcon = osIcon(version.go.os)}
 							<OsIcon />
 							{version.go.os}
 						</span>

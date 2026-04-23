@@ -3,8 +3,7 @@ import type { DrawerSettings } from '@skeletonlabs/skeleton';
 import IPAddr from 'ipaddr.js';
 import { debug } from './debug';
 import DOMPurify from 'dompurify';
-import type { Direction, Node, OnlineStatus, Tag, User } from './types';
-import { getNodeOwner } from './types';
+import type { Direction, Node, OnlineStatus, Tag, User, PreAuthKey } from './types';
 import { App } from '$lib/States.svelte';
 
 /**
@@ -518,6 +517,96 @@ export function getSortedTags(tags: Tag[], sortMethod: string, sortDirection: Di
 		return tags.reverse();
 	}
 	return tags;
+}
+
+export function filterPreAuthKey(preAuthKey: PreAuthKey, filterString: string): boolean {
+	if (filterString === '') {
+		return true;
+	}
+
+	try {
+		const r = RegExp(filterString);
+		return (
+			r.test(preAuthKey.id) ||
+			r.test(preAuthKey.user?.name || '') ||
+			r.test(preAuthKey.key) ||
+			r.test(preAuthKey.aclTags.join(' '))
+		);
+	} catch (err) {
+		return true;
+	}
+}
+
+export function getSortedPreAuthKeys(preAuthKeys: PreAuthKey[], sortMethod: string, sortDirection: Direction): PreAuthKey[] {
+	if (sortMethod === 'id') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aid = parseInt(a.id);
+			const bid = parseInt(b.id);
+			if (aid < bid) {
+				return -1;
+			}
+			if (aid > bid) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortMethod === 'user') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aUser = a.user?.name || '';
+			const bUser = b.user?.name || '';
+			if (aUser < bUser) {
+				return -1;
+			}
+			if (aUser > bUser) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortMethod === 'created') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aDate = new Date(a.createdAt);
+			const bDate = new Date(b.createdAt);
+			if (aDate < bDate) {
+				return -1;
+			}
+			if (aDate > bDate) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortMethod === 'expiration') {
+		preAuthKeys = preAuthKeys.sort((a: PreAuthKey, b: PreAuthKey) => {
+			const aDate = new Date(a.expiration);
+			const bDate = new Date(b.expiration);
+			if (aDate < bDate) {
+				return -1;
+			}
+			if (aDate > bDate) {
+				return 1;
+			}
+			return 0;
+		});
+	}
+	if (sortDirection === 'down') {
+		return preAuthKeys.reverse();
+	}
+	return preAuthKeys;
+}
+
+export function getSortedFilteredPreAuthKeys(
+	preAuthKeys: PreAuthKey[],
+	filterString: string,
+	sortMethod: string,
+	sortDirection: Direction,
+): PreAuthKey[] {
+	return getSortedPreAuthKeys(
+		preAuthKeys.filter((preAuthKey) => filterPreAuthKey(preAuthKey, filterString)),
+		sortMethod,
+		sortDirection,
+	);
 }
 
 export function getSortedFilteredTags(
