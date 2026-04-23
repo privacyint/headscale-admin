@@ -181,6 +181,21 @@ const policy = JSON.stringify({
   ssh: [],
 });
 
+const versionInfo = {
+  version: 'v0.28.0',
+  commit: '97fa117c48a58bee3941e5e8b4393873501afe14',
+  buildTime: '2026-02-04T20:26:22Z',
+  go: {
+    version: 'go1.25.5',
+    os: 'linux',
+    arch: 'amd64',
+  },
+};
+
+const healthInfo = {
+  databaseConnectivity: true,
+};
+
 // ── Router ──────────────────────────────────────────────────────────────────
 
 function isAuthorised(req) {
@@ -228,6 +243,11 @@ const server = createServer((req, res) => {
     return json(res, { status: 'ok' });
   }
 
+  // Version endpoint (public, no auth required on real Headscale)
+  if (method === 'GET' && path === '/version') {
+    return json(res, versionInfo);
+  }
+
   // Auth check
   if (!isAuthorised(req)) {
     return unauthorized(res);
@@ -248,6 +268,7 @@ const server = createServer((req, res) => {
     if (path === '/api/v1/preauthkey') return json(res, { preAuthKeys });
     if (path === '/api/v1/apikey')     return json(res, { apiKeys });
     if (path === '/api/v1/policy')     return json(res, { policy, updatedAt: new Date().toISOString() });
+    if (path === '/api/v1/health')     return json(res, healthInfo);
 
     // Single node GET: /api/v1/node/{id}
     const nodeMatch = path.match(/^\/api\/v1\/node\/(\d+)$/);

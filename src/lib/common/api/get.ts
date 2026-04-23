@@ -1,9 +1,11 @@
-import { API_URL_NODE, API_URL_POLICY, API_URL_PREAUTHKEY, API_URL_USER, apiGet } from '$lib/common/api';
+import { API_URL_NODE, API_URL_POLICY, API_URL_PREAUTHKEY, API_URL_USER, API_URL_HEALTH, apiGet } from '$lib/common/api';
 import type {
 	ApiNodes,
 	ApiPolicy,
 	ApiPreAuthKeys,
 	ApiUsers,
+	HeadscaleHealth,
+	HeadscaleVersion,
 	Node,
 	PreAuthKey,
 	User,
@@ -54,4 +56,12 @@ export async function getNodesForUser(userName: string): Promise<Node[]> {
 export async function getPolicy(): Promise<string> {
 	const { policy } = await apiGet<ApiPolicy>(API_URL_POLICY)
 	return policy
+}
+
+export async function getVersion(): Promise<HeadscaleVersion> {
+	return await apiGet<HeadscaleVersion>('/version');
+}
+
+export async function getHealth(): Promise<HeadscaleHealth> {
+	return await apiGet<HeadscaleHealth>(API_URL_HEALTH);
 }

@@ -1,9 +1,9 @@
 import { Mutex } from 'async-mutex';
 
 import { browser } from '$app/environment';
-import type { User, Node, PreAuthKey, ApiKeyInfo, ApiApiKeys, Deployment } from '$lib/common/types';
+import type { User, Node, PreAuthKey, ApiKeyInfo, ApiApiKeys, Deployment, HeadscaleVersion, HeadscaleHealth } from '$lib/common/types';
 import { TAGGED_DEVICES_USER_NAME } from '$lib/common/types';
-import { getUsers, getPreAuthKeys, getNodes, getNodesForUser } from '$lib/common/api/get';
+import { getUsers, getPreAuthKeys, getNodes, getNodesForUser, getVersion, getHealth } from '$lib/common/api/get';
 import type { ToastStore } from '@skeletonlabs/skeleton';
 import { apiGet } from './common/api';
 import { arraysEqual, clone, toastError, toastWarning } from './common/funcs';
@@ -106,6 +106,8 @@ export class HeadscaleAdmin {
     nodes = new State<Node[]>([]);
     // routes = new State<Route[]>([]);
     preAuthKeys = new State<PreAuthKey[]>([]);
+    version = new State<HeadscaleVersion | null>(null);
+    health = new State<HeadscaleHealth | null>(null);
 
     // debugging status
     debug = new StateLocal<boolean>('debug', false);
@@ -264,6 +266,26 @@ export class HeadscaleAdmin {
         return true;
     }
 
+    async populateVersion(): Promise<boolean> {
+        try {
+            const version = await getVersion();
+            this.version.value = version;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    async populateHealth(): Promise<boolean> {
+        try {
+            const health = await getHealth();
+            this.health.value = health;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     async populateAll(handler?: (err: unknown) => void, repeat: boolean = true){
         if (this.hasValidApi) {
             const promises = []
@@ -272,6 +294,8 @@ export class HeadscaleAdmin {
             promises.push(this.populatePreAuthKeys());
             // promises.push(this.populateRoutes());
             promises.push(this.populateApiKeyInfo());
+            promises.push(this.populateVersion());
+            promises.push(this.populateHealth());
             await Promise.allSettled(promises);
             promises.forEach((p) => p.catch(handler));
             debug('Completed all store population requests.');

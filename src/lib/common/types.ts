@@ -239,3 +239,18 @@ export type Deployment = {
 	acceptExitNode: boolean;
 	acceptExitNodeValue: string;
 };
+
+export type HeadscaleVersion = {
+	version: string;
+	commit: string;
+	buildTime: string;
+	go: {
+		version: string;
+		os: string;
+		arch: string;
+	};
+};
+
+export type HeadscaleHealth = {
+	databaseConnectivity: boolean;
+};
