@@ -122,7 +122,7 @@ test.describe('authentication flow', () => {
     // Modal should disappear
     await expect(page.getByRole('textbox', { name: 'API Key' })).not.toBeVisible({ timeout: 10000 });
     // Dashboard summary tiles should appear
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('authenticating on /nodes/ stays on nodes page', async ({ page }) => {
@@ -150,8 +150,8 @@ test.describe('authenticated navigation', () => {
 
   test('/ loads dashboard with summary data', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/total nodes/i)).toBeVisible();
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/^nodes online$/i)).toBeVisible();
   });
 
   test('/nodes/ renders node list', async ({ page }) => {
@@ -218,9 +218,9 @@ test.describe('refresh', () => {
 
   test('refreshing / keeps you on dashboard', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
     await page.reload();
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('refreshing /tags/ keeps you on tags page', async ({ page }) => {
@@ -241,7 +241,7 @@ test.describe('back button', () => {
 
   test('navigating forward and back preserves pages', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
 
     // Navigate to nodes via sidebar link
     await page.getByRole('link', { name: /nodes/i }).first().click();
@@ -261,7 +261,7 @@ test.describe('back button', () => {
     // Go back to dashboard
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
   });
 });
 

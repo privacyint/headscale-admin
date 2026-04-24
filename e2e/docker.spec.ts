@@ -39,7 +39,7 @@ test.describe('production routing (Docker / Caddy)', () => {
 
   test('root /admin/ renders dashboard', async ({ page }) => {
     await page.goto('./');
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('/admin/nodes/ renders node list', async ({ page }) => {
@@ -104,7 +104,7 @@ test.describe('authentication flow (Docker)', () => {
     await page.getByRole('textbox', { name: 'API Key' }).fill(API_KEY);
     await page.getByRole('button', { name: /connect/i }).click();
     await expect(page.getByRole('button', { name: /connect/i })).not.toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/total users/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('refresh after auth stays on current page with content', async ({ page }) => {
