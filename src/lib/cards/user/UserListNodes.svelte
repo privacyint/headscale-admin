@@ -1,8 +1,9 @@
 <script lang="ts">
 	import CardListEntry from '../CardListEntry.svelte';
 	import type { Node, User } from '$lib/common/types';
+	import { isTaggedDevice } from '$lib/common/types';
 	import OnlineNodeIndicator from '$lib/parts/OnlineNodeIndicator.svelte';
-	import { openDrawer } from '$lib/common/funcs';
+	import { openDrawer, getNodesForUser } from '$lib/common/funcs';
 	import { getDrawerStore } from '@skeletonlabs/skeleton';
 	import { App } from '$lib/States.svelte';
 
@@ -19,7 +20,7 @@
 
 	const filteredNodes = $derived.by(() => {
 		if (App.users.value.filter((u) => u.id == user.id).length == 1) {
-			return App.nodes.value.filter((n) => n.user.id == user.id);
+			return getNodesForUser(App.nodes.value, user);
 		}
 		return [];
 	});
@@ -36,6 +37,9 @@
 			>
 				{node.givenName} ({node.name})
 			</a>
+			{#if isTaggedDevice(node)}
+				<span class="badge variant-soft-warning text-xs px-1.5 py-0.5">tagged</span>
+			{/if}
 			<OnlineNodeIndicator {node} />
 		</div>
 	{/each}

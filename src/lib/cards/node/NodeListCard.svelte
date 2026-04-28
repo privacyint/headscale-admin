@@ -2,6 +2,7 @@
 	import { AccordionItem } from '@skeletonlabs/skeleton';
 
 	import type { Node } from '$lib/common/types';
+	import { isTaggedDevice } from '$lib/common/types';
 
 	import CardListEntry from '../CardListEntry.svelte';
 	import NodeInfo from './NodeInfo.svelte';
@@ -30,6 +31,9 @@
 		<div class="grid">
 			<CardListEntry title="ID: {node.id}">
 				<span class="font-bold">{node.givenName}</span>
+				{#if isTaggedDevice(node)}
+					<span class="badge variant-soft-warning text-xs px-1.5 py-0.5 ml-2">tagged</span>
+				{/if}
 			</CardListEntry>
 		</div>
 	</svelte:fragment>

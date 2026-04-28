@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { xxHash32 } from 'js-xxhash';
 	import type { Node } from '$lib/common/types';
+	import { getNodeOwner, isTaggedDevice, isOrphanTaggedDevice } from '$lib/common/types';
 	import { onMount } from 'svelte';
 	import {
 		dateToStr,
@@ -24,6 +25,9 @@
 	let lastSeen = $state(getTimeDifferenceMessage(getTime(node.lastSeen)));
 	const routeCount = $derived(node.availableRoutes.length);
 	const drawerStore = getDrawerStore();
+	const owner = $derived(getNodeOwner(node));
+	const tagged = $derived(isTaggedDevice(node));
+	const orphan = $derived(isOrphanTaggedDevice(node));
 
 	let color = $derived(
 		(xxHash32(node.id + ':' + node.givenName, 0xbeefbabe) & 0xff_ff_ff)
@@ -48,8 +52,11 @@
 			<OnlineNodeIndicator bind:node />
 			<span class="ml-2 text-lg font-semibold">ID: {node.id}</span>
 		</div>
-		<div class="flex items-center font-bold">
+		<div class="flex items-center gap-2 font-bold">
 			{node.givenName}
+			{#if tagged}
+				<span class="badge variant-soft-warning text-xs px-1.5 py-0.5">tagged</span>
+			{/if}
 		</div>
 	</div>
 	<CardTileEntry title="Created:">
@@ -64,8 +71,13 @@
 	</CardTileEntry>
 	<CardTileEntry title="User:">
 		<div class="flex flex-row gap-3 items-center">
-			{node.user.name}
-			<OnlineUserIndicator bind:user={node.user} />
+			{#if orphan}
+				<span class="italic opacity-60">{node.user.name}</span>
+				<span class="badge variant-soft-error text-xs px-1.5 py-0.5">no user</span>
+			{:else}
+				{owner.name}
+				<OnlineUserIndicator user={owner} />
+			{/if}
 		</div>
 	</CardTileEntry>
 	<CardTileEntry title="IPv4 Address:">
