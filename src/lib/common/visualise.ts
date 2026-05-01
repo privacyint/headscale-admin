@@ -267,17 +267,21 @@ export type LayoutOptions = {
 export type PositionedNode = GraphNode & { x: number; y: number };
 
 /**
- * Deterministic columnar layout: kinds are placed left-to-right following
- * {@link COLUMN_ORDER}; within a column, nodes are stacked top-to-bottom in
- * their insertion order.
+ * Columnar layout with Y-direction force-directed refinement.
+ *
+ * Kinds are placed left-to-right following {@link COLUMN_ORDER}.  Within each
+ * column the initial vertical positions are equally spaced, then an iterative
+ * spring simulation adjusts only the Y coordinates so that nodes connected by
+ * edges tend to share the same vertical level, dramatically reducing edge
+ * crossings while keeping the left-to-right semantic ordering intact.
  */
 export function layoutGraph(
 	graph: Graph,
 	options: LayoutOptions = {},
 ): { nodes: PositionedNode[]; width: number; height: number } {
 	const paddingX = options.paddingX ?? 80;
-	const paddingY = options.paddingY ?? 40;
-	const rowSpacing = options.rowSpacing ?? 56;
+	const paddingY = options.paddingY ?? 60;
+	const rowSpacing = options.rowSpacing ?? 90;
 
 	const byKind: Record<GraphNodeKind, GraphNode[]> = {
 		user: [],
@@ -294,22 +298,75 @@ export function layoutGraph(
 	const colCount = Math.max(activeColumns.length, 1);
 	const tallest = Math.max(1, ...activeColumns.map((k) => byKind[k].length));
 
-	const innerWidth = options.width ?? Math.max(640, colCount * 220);
+	const innerWidth = options.width ?? Math.max(640, colCount * 200);
 	const colGap = (innerWidth - paddingX * 2) / Math.max(1, colCount - 1 || 1);
-	const height = options.height ?? paddingY * 2 + (tallest - 1) * rowSpacing + rowSpacing;
+	const height = options.height ?? paddingY * 2 + tallest * rowSpacing;
 
-	const positioned: PositionedNode[] = [];
+	// ── Step 1: assign fixed column X coordinates ────────────────────────────
+	const colX = new Map<GraphNodeKind, number>();
 	activeColumns.forEach((kind, colIdx) => {
+		colX.set(kind, activeColumns.length === 1 ? innerWidth / 2 : paddingX + colIdx * colGap);
+	});
+
+	// ── Step 2: evenly space initial Y positions within each column ──────────
+	const posY = new Map<string, number>();
+	activeColumns.forEach((kind) => {
 		const col = byKind[kind];
-		// centre the column vertically around the canvas midpoint
 		const colHeight = (col.length - 1) * rowSpacing;
 		const yStart = (height - colHeight) / 2;
-		col.forEach((n, rowIdx) => {
-			const x = activeColumns.length === 1 ? innerWidth / 2 : paddingX + colIdx * colGap;
-			const y = yStart + rowIdx * rowSpacing;
-			positioned.push({ ...n, x, y });
-		});
+		col.forEach((n, rowIdx) => posY.set(n.id, yStart + rowIdx * rowSpacing));
 	});
+
+	// ── Step 3: Y-only force-directed refinement ─────────────────────────────
+	// Repulsion keeps nodes in the same column from overlapping; attraction
+	// along edges aligns connected nodes vertically, which reduces crossings.
+	const REPULSION = rowSpacing * rowSpacing * 3;
+	const ATTRACTION = 0.012;
+	const MAX_ITER = 60;
+	const initialTemp = rowSpacing * 0.6;
+
+	for (let iter = 0; iter < MAX_ITER; iter++) {
+		const forces = new Map<string, number>();
+		for (const n of graph.nodes) forces.set(n.id, 0);
+
+		// Pairwise repulsion (Y direction only between every pair of nodes)
+		const nodes = graph.nodes;
+		for (let i = 0; i < nodes.length; i++) {
+			const ya = posY.get(nodes[i].id) ?? 0;
+			for (let j = i + 1; j < nodes.length; j++) {
+				const yb = posY.get(nodes[j].id) ?? 0;
+				const dy = yb - ya;
+				const dist = Math.abs(dy) + 0.5;
+				const f = (REPULSION / (dist * dist)) * Math.sign(dy || 1);
+				forces.set(nodes[i].id, (forces.get(nodes[i].id) ?? 0) - f);
+				forces.set(nodes[j].id, (forces.get(nodes[j].id) ?? 0) + f);
+			}
+		}
+
+		// Edge spring attraction (pull connected nodes toward the same Y)
+		for (const e of graph.edges) {
+			if (!posY.has(e.from) || !posY.has(e.to)) continue;
+			const dy = (posY.get(e.to) ?? 0) - (posY.get(e.from) ?? 0);
+			const spring = ATTRACTION * dy;
+			forces.set(e.from, (forces.get(e.from) ?? 0) + spring);
+			forces.set(e.to, (forces.get(e.to) ?? 0) - spring);
+		}
+
+		// Apply forces with linear cooling; clamp to canvas boundaries
+		const temp = initialTemp * (1 - iter / MAX_ITER);
+		for (const n of graph.nodes) {
+			const f = forces.get(n.id) ?? 0;
+			const clamped = Math.max(-temp, Math.min(temp, f));
+			const current = posY.get(n.id) ?? 0;
+			posY.set(n.id, Math.max(paddingY, Math.min(height - paddingY, current + clamped)));
+		}
+	}
+
+	// ── Step 4: assemble result ───────────────────────────────────────────────
+	const positioned: PositionedNode[] = [];
+	for (const n of graph.nodes) {
+		positioned.push({ ...n, x: colX.get(n.kind) ?? 0, y: posY.get(n.id) ?? 0 });
+	}
 
 	return { nodes: positioned, width: innerWidth, height };
 }
@@ -371,4 +428,51 @@ export function neighboursOf(graph: Graph, id: string): Set<string> {
 		if (e.to === id) out.add(e.from);
 	}
 	return out;
+}
+
+// ── node-count cap ──────────────────────────────────────────────────────────
+
+/**
+ * Maximum number of nodes shown per {@link GraphNodeKind} before the graph is
+ * considered too dense to render clearly.
+ */
+export const MAX_NODES_PER_KIND = 10;
+
+/**
+ * Trim a graph so that at most {@link maxPerKind} nodes of each kind are kept
+ * (in insertion order). Edges whose endpoints were trimmed are also removed.
+ *
+ * Returns both the resulting graph and a flag indicating whether any nodes
+ * were omitted, so the UI can display a warning.
+ */
+export function trimGraph(
+	graph: Graph,
+	maxPerKind = MAX_NODES_PER_KIND,
+): { graph: Graph; truncated: boolean } {
+	const byKind: Record<GraphNodeKind, GraphNode[]> = {
+		user: [],
+		group: [],
+		tag: [],
+		node: [],
+		host: [],
+		wildcard: [],
+	};
+	for (const n of graph.nodes) byKind[n.kind].push(n);
+
+	let truncated = false;
+	const kept: GraphNode[] = [];
+	for (const kind of COLUMN_ORDER) {
+		const kindNodes = byKind[kind];
+		if (kindNodes.length > maxPerKind) {
+			truncated = true;
+			kept.push(...kindNodes.slice(0, maxPerKind));
+		} else {
+			kept.push(...kindNodes);
+		}
+	}
+
+	const keptIds = new Set(kept.map((n) => n.id));
+	const edges = graph.edges.filter((e) => keptIds.has(e.from) && keptIds.has(e.to));
+
+	return { graph: { nodes: kept, edges }, truncated };
 }

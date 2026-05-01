@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	buildGraph,
 	filterGraph,
+	trimGraph,
 	layoutGraph,
 	neighboursOf,
 	resolveEndpoint,
@@ -10,6 +11,7 @@ import {
 	tagId,
 	nodeId,
 	WILDCARD_ID,
+	MAX_NODES_PER_KIND,
 	DEFAULT_KIND_FILTER,
 	DEFAULT_EDGE_FILTER,
 	type KindFilter,
@@ -284,5 +286,58 @@ describe('layoutGraph', () => {
 		const a = layoutGraph(g);
 		const b = layoutGraph(g);
 		expect(a.nodes.map((n) => [n.id, n.x, n.y])).toEqual(b.nodes.map((n) => [n.id, n.x, n.y]));
+	});
+});
+
+describe('trimGraph', () => {
+	const alice = user('alice');
+	const bob = user('bob');
+
+	it('returns graph unchanged when all kinds are within limit', () => {
+		const g = buildGraph([alice, bob], [], null);
+		const { graph, truncated } = trimGraph(g, 5);
+		expect(graph.nodes.length).toBe(g.nodes.length);
+		expect(truncated).toBe(false);
+	});
+
+	it('keeps at most maxPerKind nodes per kind and sets truncated', () => {
+		// Build a graph with 5 users and check that trimming to 3 works.
+		const manyUsers = Array.from({ length: 5 }, (_, i) => user(`u${i}`, String(i)));
+		const g = buildGraph(manyUsers, [], null);
+		const usersBefore = g.nodes.filter((n) => n.kind === 'user').length;
+		expect(usersBefore).toBe(5);
+
+		const { graph, truncated } = trimGraph(g, 3);
+		expect(graph.nodes.filter((n) => n.kind === 'user').length).toBe(3);
+		expect(truncated).toBe(true);
+	});
+
+	it('drops edges whose endpoints were trimmed', () => {
+		const manyUsers = Array.from({ length: 5 }, (_, i) => user(`u${i}`, String(i)));
+		const acl: import('$lib/common/acl.svelte').ACL = {
+			groups: { 'group:all': manyUsers.map((u) => u.name) },
+			tagOwners: {},
+			hosts: {},
+			acls: [],
+			ssh: [],
+		};
+		const g = buildGraph(manyUsers, [], acl);
+		const { graph } = trimGraph(g, 2);
+		// All remaining edges must connect kept node ids
+		const keptIds = new Set(graph.nodes.map((n) => n.id));
+		for (const e of graph.edges) {
+			expect(keptIds.has(e.from)).toBe(true);
+			expect(keptIds.has(e.to)).toBe(true);
+		}
+	});
+
+	it('uses MAX_NODES_PER_KIND as the default limit', () => {
+		const manyUsers = Array.from({ length: MAX_NODES_PER_KIND + 1 }, (_, i) =>
+			user(`u${i}`, String(i)),
+		);
+		const g = buildGraph(manyUsers, [], null);
+		const { graph, truncated } = trimGraph(g);
+		expect(graph.nodes.filter((n) => n.kind === 'user').length).toBe(MAX_NODES_PER_KIND);
+		expect(truncated).toBe(true);
 	});
 });
