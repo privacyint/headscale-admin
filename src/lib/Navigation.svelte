@@ -11,6 +11,7 @@
 	import RawMdiSettings from '~icons/mdi/settings';
 	import RawMdiTag from '~icons/mdi/tag';
 	import RawMdiKey from '~icons/mdi/key';
+	import RawMdiGraphOutline from '~icons/mdi/graph-outline';
 
 	// import { ApiKeyInfoStore, ApiKeyStore, hasValidApi } from './Stores';
 	import { onMount, type Component } from 'svelte';
@@ -18,12 +19,10 @@
 	import { App } from '$lib/States.svelte';
 
 	type NavigationProps = {
-		labels?: boolean
-	}
+		labels?: boolean;
+	};
 
-	let {
-		labels = true,
-	}: NavigationProps = $props()
+	let { labels = true }: NavigationProps = $props();
 
 	const DrawerStore = getDrawerStore();
 
@@ -52,10 +51,11 @@
 		{ path: '/deploy', name: 'Deploy', logo: RawMdiHomeGroupPlus },
 		{ path: '/routes', name: 'Routes', logo: RawMdiRouter },
 		{ path: '/acls', name: 'ACLs', logo: RawMdiSecurity },
+		{ path: '/visualise', name: 'Visualise', logo: RawMdiGraphOutline },
 		{ path: '/settings', name: 'Settings', logo: RawMdiSettings },
 	].filter((p) => p != undefined);
 
-	const pages = $derived.by(() => App.hasValidApi ? allPages : allPages.slice(-1));
+	const pages = $derived.by(() => (App.hasValidApi ? allPages : allPages.slice(-1)));
 </script>
 
 <nav class="list-nav pt-0">

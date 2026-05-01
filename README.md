@@ -407,6 +407,22 @@ Allows a user to save the ACL configuration to the headscale server or load a ne
 
 <img width="1000" alt="image" src="./img/HA-ACL-Config-Load.png">
 
+### Visualise Page (Experimental)
+
+Renders an entity-relationship style graph of Users, Groups, Tags and Nodes, with ACL policies drawn as connecting arrows. Use the sidebar to toggle which entity kinds and relation types are shown, search by label, and click any entity to drill down into its direct relationships.
+
+This page is marked **Experimental** as it is still being refined — complex ACLs (for example `autogroup:*` or CIDR endpoints) are not yet represented as distinct graph nodes.
+
+<img width="1000" alt="visualise page" src="./img/HA-Visualise.png">
+
+Clicking an entity highlights its neighbours and opens a details panel from which you can drill further:
+
+<img width="1000" alt="visualise page with a user selected" src="./img/HA-Visualise-Selected.png">
+
+Filters can be combined to focus on a subset of the graph:
+
+<img width="1000" alt="visualise page with filtered entities" src="./img/HA-Visualise-Filtered.png">
+
 ### Settings Page
 
 Store API URL and API Key information in the browser's LocalStorage. Set API refresh interval (how frequently users, preauth keys, nodes, and routes are updated) and toggle console debugging.
