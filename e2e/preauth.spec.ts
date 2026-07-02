@@ -386,16 +386,16 @@ test.describe('deploy page preauth integration', () => {
     // Wait for the existing-key list to populate from the async app stores.
     await expect
       .poll(async () => {
-        return await page.locator('select').nth(1).locator('option[value="pak_alice_0001"]').count();
+        return await page.locator('select').nth(1).locator('option[value="pak_alice_000001"]').count();
       })
       .toBe(1);
 
     // Select the existing key
-    await page.locator('select').nth(1).selectOption('pak_alice_0001');
+    await page.locator('select').nth(1).selectOption('pak_alice_000001');
 
     // Check that the command includes the selected key
     const commandText = await page.locator('code').textContent();
-    expect(commandText).toContain('--auth-key=pak_alice_0001');
+    expect(commandText).toContain('--auth-key=pak_alice_000001');
   });
   test('deploy page can create tagged preauth key', async ({ page }) => {
     await page.goto('/deploy');
