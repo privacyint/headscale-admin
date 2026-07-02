@@ -79,6 +79,17 @@
 </script>
 
 <CardListPage>
+    {#if acl.hasUnsupportedPolicyFields()}
+        <div class="mb-4 rounded-md border border-warning-500/50 bg-warning-50 p-3 text-sm text-warning-900 dark:bg-warning-900/20 dark:text-warning-100">
+            <div class="font-semibold">Advanced policy fields detected</div>
+            <div class="mt-1">
+                Unknown or unsupported fields are preserved on save. Review advanced fields directly in JSON if needed.
+            </div>
+            <div class="mt-2 opacity-90">
+                {acl.getUnsupportedPolicyFields().slice(0, 8).join(', ')}{#if acl.getUnsupportedPolicyFields().length > 8}, …{/if}
+            </div>
+        </div>
+    {/if}
 	<div class="mb-2">
 		<button disabled={loading || editing} class="btn-sm rounded-md variant-filled-success disabled:opacity-50 w-32" onclick={() => { 
             saveConfig(acl, ToastStore, {setLoadingTrue: () => { loading = true}, setLoadingFalse: ()=> { loading = false }})

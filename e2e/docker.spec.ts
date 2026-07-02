@@ -42,6 +42,13 @@ test.describe('production routing (Docker / Caddy)', () => {
     await expect(page.getByText(/users online/i)).toBeVisible({ timeout: 10000 });
   });
 
+  test('dashboard shows exit nodes count', async ({ page }) => {
+    await page.goto('./');
+    const exitCard = page.getByRole('button', { name: /exit nodes online/i });
+    await expect(exitCard).toBeVisible({ timeout: 10000 });
+    await expect(exitCard.getByText('1/1')).toBeVisible();
+  });
+
   test('/admin/nodes/ renders node list', async ({ page }) => {
     await page.goto('./nodes/');
     await expect(page.getByText('alice-laptop')).toBeVisible({ timeout: 10000 });

@@ -154,10 +154,38 @@ test.describe('authenticated navigation', () => {
     await expect(page.getByText(/^nodes online$/i)).toBeVisible();
   });
 
+  test('dashboard shows exit nodes count', async ({ page }) => {
+    await page.goto('/');
+    // exit-relay is the only exit node in fixtures (approvedRoutes: 0.0.0.0/0, ::/0)
+    const exitCard = page.getByRole('button', { name: /exit nodes online/i });
+    await expect(exitCard).toBeVisible({ timeout: 10000 });
+    // Should show 1/1 (one exit node, online)
+    await expect(exitCard.getByText('1/1')).toBeVisible();
+  });
+
   test('/nodes/ renders node list', async ({ page }) => {
     await page.goto('/nodes/');
     // Node from fixture data
     await expect(page.getByText('alice-laptop')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('/nodes/ shows tag icon on tagged nodes', async ({ page }) => {
+    await page.goto('/nodes/');
+    // bob-server has tag:server — should have a tag icon
+    await expect(page.getByText('bob-server')).toBeVisible({ timeout: 10000 });
+    const tagIcons = page.locator('[data-testid="node-tags-icon"]');
+    // bob-server, infra-gateway, and alice-tagged-node all have tags
+    await expect(tagIcons.first()).toBeVisible();
+  });
+
+  test('/nodes/ tag icon hover shows tag badges', async ({ page }) => {
+    await page.goto('/nodes/');
+    await expect(page.getByText('bob-server')).toBeVisible({ timeout: 10000 });
+    // Hover over the first tag icon to trigger the popup
+    const tagIcon = page.locator('[data-testid="node-tags-icon"]').first();
+    await tagIcon.hover();
+    // The popup should show a tag badge
+    await expect(page.locator('[data-testid="tag-badge"]').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('/users/ renders user list', async ({ page }) => {

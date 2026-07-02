@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { xxHash32 } from 'js-xxhash';
 	import type { Node } from '$lib/common/types';
-	import { getNodeOwner, isTaggedDevice, isOrphanTaggedDevice } from '$lib/common/types';
+	import { getNodeOwner, isOrphanTaggedDevice } from '$lib/common/types';
 	import { onMount } from 'svelte';
 	import {
 		dateToStr,
@@ -14,6 +14,7 @@
 	import CardTileEntry from '../CardTileEntry.svelte';
 	import OnlineNodeIndicator from '$lib/parts/OnlineNodeIndicator.svelte';
 	import OnlineUserIndicator from '$lib/parts/OnlineUserIndicator.svelte';
+	import NodeTagsIcon from '$lib/parts/NodeTagsIcon.svelte';
 	import { App } from '$lib/States.svelte';
 
 	type NodeTileCardProps = {
@@ -26,7 +27,6 @@
 	const routeCount = $derived(node.availableRoutes.length);
 	const drawerStore = getDrawerStore();
 	const owner = $derived(getNodeOwner(node));
-	const tagged = $derived(isTaggedDevice(node));
 	const orphan = $derived(isOrphanTaggedDevice(node));
 
 	let color = $derived(
@@ -52,10 +52,10 @@
 			<OnlineNodeIndicator bind:node />
 			<span class="ml-2 text-lg font-semibold">ID: {node.id}</span>
 		</div>
-		<div class="flex items-center gap-2 font-bold">
+		<div class="flex items-center gap-1.5 font-bold">
 			{node.givenName}
-			{#if tagged}
-				<span class="badge variant-soft-warning text-xs px-1.5 py-0.5">tagged</span>
+			{#if node.tags.length > 0}
+				<NodeTagsIcon tags={node.tags} id="node-tile-{node.id}" />
 			{/if}
 		</div>
 	</div>
