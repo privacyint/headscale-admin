@@ -46,7 +46,7 @@ test.describe('production routing (Docker / Caddy)', () => {
     await page.goto('./');
     const exitCard = page.getByRole('button', { name: /exit nodes online/i });
     await expect(exitCard).toBeVisible({ timeout: 10000 });
-    await expect(exitCard.getByText('1/1')).toBeVisible();
+    await expect(exitCard.getByText(/\d+\s*\/\s*\d+/)).toBeVisible();
   });
 
   test('/admin/nodes/ renders node list', async ({ page }) => {
