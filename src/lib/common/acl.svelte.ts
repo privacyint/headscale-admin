@@ -4,6 +4,7 @@ import { setPolicy } from './api'
 import type { ToastStore } from '@skeletonlabs/skeleton'
 import { debug } from './debug'
 import { parsePolicyDocument, serialisePolicyDocument, type LegacyPolicySection } from './policy-document'
+import type { PolicyGrant, PolicyNodeAttr, PolicyPosture, PolicySshTest, PolicyTest } from './policy-types'
 
 export type TagOwners = string[]
 export type TagOwnersTyped = { users: string[], groups: string[], tags: string[] }
@@ -55,6 +56,12 @@ export type ACL = {
     hosts: AclHosts, // keys are DNS-style hostnames
     acls: AclPolicies,
     ssh?: AclSshRules,
+    grants?: PolicyGrant[],
+    nodeAttrs?: PolicyNodeAttr[],
+    tests?: PolicyTest[],
+    sshTests?: PolicySshTest[],
+    postures?: PolicyPosture[],
+    randomizeClientPort?: boolean,
 }
 
 export type PrefixType = "group" | "tag"
@@ -77,6 +84,12 @@ export class ACLBuilder implements ACL {
     hosts = $state<AclHosts>({})
     acls = $state<AclPolicies>([])
     ssh = $state<AclSshRules|undefined>(undefined)
+    grants = $state<PolicyGrant[] | undefined>(undefined)
+    nodeAttrs = $state<PolicyNodeAttr[] | undefined>(undefined)
+    tests = $state<PolicyTest[] | undefined>(undefined)
+    sshTests = $state<PolicySshTest[] | undefined>(undefined)
+    postures = $state<PolicyPosture[] | undefined>(undefined)
+    randomizeClientPort = $state<boolean | undefined>(undefined)
 
     constructor(
         groups: AclGroups,
@@ -84,6 +97,12 @@ export class ACLBuilder implements ACL {
         hosts: AclHosts,
         acls: AclPolicies,
         ssh?: AclSshRules,
+        grants?: PolicyGrant[],
+        nodeAttrs?: PolicyNodeAttr[],
+        tests?: PolicyTest[],
+        sshTests?: PolicySshTest[],
+        postures?: PolicyPosture[],
+        randomizeClientPort?: boolean,
         policyRaw?: Record<string, unknown>,
         unsupportedPolicyFields: string[] = [],
     ) {
@@ -92,6 +111,12 @@ export class ACLBuilder implements ACL {
         this.hosts = hosts
         this.acls = acls
         this.ssh = ssh
+        this.grants = grants
+        this.nodeAttrs = nodeAttrs
+        this.tests = tests
+        this.sshTests = sshTests
+        this.postures = postures
+        this.randomizeClientPort = randomizeClientPort
         this.#policyRaw = policyRaw
         this.#unsupportedPolicyFields = unsupportedPolicyFields
     }
@@ -103,6 +128,12 @@ export class ACLBuilder implements ACL {
             hosts: this.hosts,
             acls: this.acls,
             ssh: this.ssh,
+            grants: this.grants,
+            nodeAttrs: this.nodeAttrs,
+            tests: this.tests,
+            sshTests: this.sshTests,
+            postures: this.postures,
+            randomizeClientPort: this.randomizeClientPort,
         }
 
         if (this.#policyRaw !== undefined) {
@@ -121,7 +152,7 @@ export class ACLBuilder implements ACL {
     }
 
     static emptyACL(): ACLBuilder {
-        return new ACLBuilder({}, {}, {}, [], [])
+        return new ACLBuilder({}, {}, {}, [], [], [], [], [], [], [], undefined)
     }
 
     static defaultACL(): ACLBuilder {
@@ -130,7 +161,7 @@ export class ACLBuilder implements ACL {
             action: "accept",
             src: ["*"],
             dst: ["*:*"],
-        }], [])
+        }], [], [], [], [], [], [], undefined)
     }
 
     static addPolicyMeta(policy: AclPolicy): boolean {
@@ -150,9 +181,63 @@ export class ACLBuilder implements ACL {
             { ...doc.legacy.hosts },
             [...doc.legacy.acls as AclPolicies],
             [...ssh],
+            doc.legacy.grants ? [...doc.legacy.grants] : undefined,
+            doc.legacy.nodeAttrs ? [...doc.legacy.nodeAttrs] : undefined,
+            doc.legacy.tests ? [...doc.legacy.tests] : undefined,
+            doc.legacy.sshTests ? [...doc.legacy.sshTests] : undefined,
+            doc.legacy.postures ? [...doc.legacy.postures] : undefined,
+            doc.legacy.randomizeClientPort,
             doc.raw,
             doc.unsupportedFields,
         )
+    }
+
+    setGrants(grants: PolicyGrant[] | undefined) {
+        this.grants = grants === undefined ? undefined : [...grants]
+    }
+
+    getGrants(): PolicyGrant[] | undefined {
+        return this.grants
+    }
+
+    setNodeAttrs(nodeAttrs: PolicyNodeAttr[] | undefined) {
+        this.nodeAttrs = nodeAttrs === undefined ? undefined : [...nodeAttrs]
+    }
+
+    getNodeAttrs(): PolicyNodeAttr[] | undefined {
+        return this.nodeAttrs
+    }
+
+    setTests(tests: PolicyTest[] | undefined) {
+        this.tests = tests === undefined ? undefined : [...tests]
+    }
+
+    getTests(): PolicyTest[] | undefined {
+        return this.tests
+    }
+
+    setSshTests(sshTests: PolicySshTest[] | undefined) {
+        this.sshTests = sshTests === undefined ? undefined : [...sshTests]
+    }
+
+    getSshTests(): PolicySshTest[] | undefined {
+        return this.sshTests
+    }
+
+    setPostures(postures: PolicyPosture[] | undefined) {
+        this.postures = postures === undefined ? undefined : [...postures]
+    }
+
+    getPostures(): PolicyPosture[] | undefined {
+        return this.postures
+    }
+
+    setRandomizeClientPort(randomizeClientPort: boolean | undefined) {
+        this.randomizeClientPort = randomizeClientPort
+    }
+
+    getRandomizeClientPort(): boolean | undefined {
+        return this.randomizeClientPort
     }
 
     private static getPrefix(name: string): PrefixType | null {

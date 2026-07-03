@@ -1,6 +1,8 @@
 <script lang="ts">
 	import CardListPage from "$lib/cards/CardListPage.svelte";
-	import { ACLBuilder, saveConfig, type ACL } from "$lib/common/acl.svelte";
+    import { saveConfig, type ACL } from "$lib/common/acl.svelte";
+    import type { PolicyBuilder } from '$lib/common/policy-builder';
+    import { PolicyBuilder as PolicyBuilderCtor } from '$lib/common/policy-builder';
     import { isTextContent, JSONEditor, Mode, type TextContent } from 'svelte-jsoneditor'
     import 'svelte-jsoneditor/themes/jse-theme-dark.css'
 	import { getPolicy } from "$lib/common/api";
@@ -31,7 +33,7 @@
     };
     */
 
-	let {acl = $bindable(), loading = $bindable(false)}: {acl: ACLBuilder, loading?: boolean} = $props();
+    let {acl = $bindable(), loading = $bindable(false)}: {acl: PolicyBuilder, loading?: boolean} = $props();
 	const aclJSON = $derived(acl.JSON(2))
     let editing = $state(false)
     let aclEditJSON = $state<TextContent>({text:""})
@@ -45,18 +47,18 @@
     */
 
     function applyConfig(config: TextContent) {
-        acl = ACLBuilder.fromPolicy(config.text)
+        acl = PolicyBuilderCtor.fromPolicy(config.text)
         editing = false
     }
 
     function resetConfig() {
-        acl = ACLBuilder.defaultACL()
+        acl = PolicyBuilderCtor.defaultACL()
     }
 
     function loadConfig() {
         loading = true
 		getPolicy().then(policy => {
-			acl = ACLBuilder.fromPolicy(JWCC.parse<ACL>(policy))
+            acl = PolicyBuilderCtor.fromPolicy(JWCC.parse<ACL>(policy))
             toastSuccess("Loaded ACL policy from server", ToastStore)
 		}).catch(reason => {
 			debug("failed to get policy:", reason)
