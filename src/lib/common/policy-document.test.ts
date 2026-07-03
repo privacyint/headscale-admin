@@ -22,9 +22,12 @@ describe('policy-document parse/serialise', () => {
         const out = serialisePolicyDocument(doc.raw, doc.legacy, 2)
 
         expect(JWCC.parse(out)).toEqual(JWCC.parse(source))
-        expect(doc.unsupportedFields).toContain('grants')
-        expect(doc.unsupportedFields).toContain('nodeAttrs')
-        expect(doc.unsupportedFields).toContain('randomizeClientPort')
+        expect(doc.legacy.grants).toBeDefined()
+        expect(doc.legacy.nodeAttrs).toBeDefined()
+        expect(doc.legacy.randomizeClientPort).toBe(true)
+        expect(doc.unsupportedFields).not.toContain('grants')
+        expect(doc.unsupportedFields).not.toContain('nodeAttrs')
+        expect(doc.unsupportedFields).not.toContain('randomizeClientPort')
     })
 
     it('merges edited legacy ACL sections while keeping unknown top-level fields', () => {

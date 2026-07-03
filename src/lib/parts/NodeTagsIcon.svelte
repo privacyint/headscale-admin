@@ -10,11 +10,11 @@
 	};
 	let { tags, id }: NodeTagsIconProps = $props();
 
-	const popupHover: PopupSettings = {
+	const popupHover = $derived<PopupSettings>({
 		event: 'hover',
 		target: `tags-popup-${id}`,
 		placement: 'bottom',
-	};
+	});
 </script>
 
 {#if tags.length > 0}
@@ -27,6 +27,6 @@
 				<TagBadge {tag} />
 			{/each}
 		</div>
-		<div class="arrow variant-filled-surface" />
+		<div class="arrow variant-filled-surface"></div>
 	</div>
 {/if}

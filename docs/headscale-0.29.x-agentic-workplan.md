@@ -164,6 +164,49 @@ Introduce first-class policy structures for grants/nodeAttrs while removing lega
 
 ---
 
+## Phase 1.5 — Policy architecture stabilisation (de-spaghetti bridge)
+
+## Goal
+
+Reduce coupling before Phase 2/3 feature expansion so grants/nodeAttrs/SSH/auth work lands on maintainable foundations.
+
+## Why this phase now
+
+Phase 1 introduces modern fields, but legacy ACL-centric code paths still concentrate model, serialisation, and UI-side effects in large modules. Without this clean-up, later phases risk compounding complexity and regressions.
+
+## Scope
+
+- Extract pure policy domain operations from UI/runtime concerns.
+- Introduce a thin editor/store boundary for Svelte reactivity.
+- Keep ACL tabs fully functional during migration.
+- Preserve lossless round-trip guarantees from Phase 0/1.
+
+## Subtasks
+
+- [ ] Split `src/lib/common/acl.svelte.ts` into:
+  - pure policy domain modules (validation/mutations/normalisation)
+  - UI-facing editor/store wrapper
+  - persistence adapter(s) for API save/load
+- [ ] Add `PolicyBuilder` as first-class implementation (bridge adapter may remain temporarily for ACL UI compatibility).
+- [ ] Move toast/loading side-effects out of core model layer into route/component handlers.
+- [ ] Add targeted unit tests for extracted pure modules (including invariants and mutation edge cases).
+- [ ] Keep old ACL component contracts stable until Phase 2 UI replacement is complete.
+
+## Guardrails
+
+- No behaviour changes to existing ACL workflows.
+- No destructive policy writes.
+- Keep changes incremental; avoid broad visual/UI rewrites in this phase.
+
+## Acceptance criteria
+
+- Core policy logic is testable without Svelte runtime.
+- Model modules are materially smaller and responsibility-separated.
+- Existing ACL tabs continue to work unchanged from user perspective.
+- CI-equivalent local checks pass before merge.
+
+---
+
 ## Phase 2 — Grants and nodeAttrs UX
 
 ## Goal
@@ -302,6 +345,18 @@ Use this per phase:
    - Why
    - Tests run
    - Risks/known gaps
+
+### CI parity rule (mandatory)
+
+Before commit/push for any phase, run the same quality gates as `.github/workflows/ci.yml` in Docker and require pass status:
+
+- `svelte-check`
+- `vitest`
+- `vite build` (+ static route verification where applicable)
+- Docker image smoke build/check
+- Playwright e2e (dev + docker config where applicable)
+
+Local acceptance should match remote CI expectations; do not push if the CI-equivalent local run is red.
 
 ### Commit guidance
 

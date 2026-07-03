@@ -12,7 +12,8 @@
 	let { preAuthKey }: UserListPreAuthKeyProps = $props()
 
 	const toastStore = getToastStore();
-	let pakIsExpired = $state(isExpired(preAuthKey))
+	const getPakIsExpired = () => isExpired(preAuthKey)
+	let pakIsExpired = $state(getPakIsExpired())
 
 	function isExpired(preAuthKey: PreAuthKey): boolean {
 		return new Date() > new Date(preAuthKey.expiration);
@@ -20,7 +21,7 @@
 
 	onMount(()=>{
 		const interval = setInterval(() => {
-			pakIsExpired = isExpired(preAuthKey)
+			pakIsExpired = getPakIsExpired()
 		}, 1000)
 
 		return () => {

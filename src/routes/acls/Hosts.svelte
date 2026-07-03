@@ -1,8 +1,9 @@
 <script lang="ts">
 	import CardListPage from '$lib/cards/CardListPage.svelte';
-	import { saveConfig, type ACLBuilder } from '$lib/common/acl.svelte';
+	import type { ACLBuilder } from '$lib/common/acl.svelte';
 	import { toastError, toastSuccess } from '$lib/common/funcs';
 	import { getToastStore } from '@skeletonlabs/skeleton';
+	import { savePolicyDocument } from '$lib/common/policy-persistence';
 	import NewItem from '$lib/parts/NewItem.svelte';
 	import HostListCard from '$lib/cards/acl/HostListCard.svelte';
 	import { debug } from '$lib/common/debug';
@@ -57,15 +58,28 @@
 			return hosts;
 		}
 	});
+
+	async function saveCurrentPolicy() {
+		loading = true;
+		try {
+			await savePolicyDocument(acl);
+			toastSuccess('Saved ACL Configuration', ToastStore);
+		} catch (e) {
+			if (e instanceof Error) {
+				toastError('', ToastStore, e);
+			}
+			debug(e);
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 
 <CardListPage>
 	<div class="mb-2">
 		<div class="flex flex-row space-x-2">
-			<button disabled={loading} class="btn-icon rounded-md variant-filled-success disabled:opacity-50 w-8 text-xl" onclick={() => { 
-				saveConfig(acl, ToastStore, {setLoadingTrue: () => { loading = true}, setLoadingFalse: ()=> { loading = false }})
-			}}>
+			<button disabled={loading} class="btn-icon rounded-md variant-filled-success disabled:opacity-50 w-8 text-xl" onclick={saveCurrentPolicy}>
 				<RawMdiSave />
 			</button>
 			<button class="btn-sm rounded-md variant-filled-success" onclick={toggleShowCreateHost}>
