@@ -8,12 +8,15 @@ import type {
 } from '$lib/common/types';
 import { debug } from '../debug';
 import { apiPost, apiPut } from './base';
-import type { ACLBuilder } from '../acl.svelte';
 import { API_URL_NODE, API_URL_POLICY, API_URL_PREAUTHKEY, API_URL_USER } from './url';
 import { createApiKey } from './create';
 import { expireApiKey } from './delete';
 import { App } from '$lib/States.svelte';
 import { setsEqual } from '../funcs';
+
+type PolicySerializable = {
+	JSON: (space?: number) => string;
+};
 
 export async function renameUser(u: User, nameNew: string): Promise<User> {
 	const path = `${API_URL_USER}/${u.id}/rename/${nameNew}`;
@@ -88,7 +91,7 @@ export async function disableRoutes(node: Node, ...routes: string[]): Promise<st
 	return nodeNew.approvedRoutes;
 }
 
-export async function setPolicy(acl: ACLBuilder) {
+export async function setPolicy(acl: PolicySerializable) {
 	const path = `${API_URL_POLICY}`
 	await apiPut<ApiPolicy>(path, {"policy": acl.JSON(4)})
 }

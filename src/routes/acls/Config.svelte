@@ -1,11 +1,11 @@
 <script lang="ts">
 	import CardListPage from "$lib/cards/CardListPage.svelte";
-    import { saveConfig, type ACL } from "$lib/common/acl.svelte";
+    import type { ACL } from "$lib/common/acl.svelte";
     import type { PolicyBuilder } from '$lib/common/policy-builder';
     import { PolicyBuilder as PolicyBuilderCtor } from '$lib/common/policy-builder';
+    import { loadPolicyDocumentText, savePolicyDocument } from '$lib/common/policy-persistence';
     import { isTextContent, JSONEditor, Mode, type TextContent } from 'svelte-jsoneditor'
     import 'svelte-jsoneditor/themes/jse-theme-dark.css'
-	import { getPolicy } from "$lib/common/api";
 	import { debug } from "$lib/common/debug";
 	import { toastError, toastSuccess } from "$lib/common/funcs";
 	import { CodeBlock, /*getModalStore,*/ getToastStore, modeCurrent, type ModalSettings } from "@skeletonlabs/skeleton";
@@ -57,7 +57,7 @@
 
     function loadConfig() {
         loading = true
-		getPolicy().then(policy => {
+        loadPolicyDocumentText().then(policy => {
             acl = PolicyBuilderCtor.fromPolicy(JWCC.parse<ACL>(policy))
             toastSuccess("Loaded ACL policy from server", ToastStore)
 		}).catch(reason => {
@@ -67,6 +67,21 @@
             loading = false
         })
         // ModalStore.trigger(modal)
+    }
+
+    async function saveCurrentPolicy() {
+        loading = true
+        try {
+            await savePolicyDocument(acl)
+            toastSuccess('Saved ACL Configuration', ToastStore)
+        } catch (err) {
+            if (err instanceof Error) {
+                toastError('', ToastStore, err)
+            }
+            debug(err)
+        } finally {
+            loading = false
+        }
     }
 
     onMount(()=>{
@@ -94,7 +109,7 @@
     {/if}
 	<div class="mb-2">
 		<button disabled={loading || editing} class="btn-sm rounded-md variant-filled-success disabled:opacity-50 w-32" onclick={() => { 
-            saveConfig(acl, ToastStore, {setLoadingTrue: () => { loading = true}, setLoadingFalse: ()=> { loading = false }})
+            saveCurrentPolicy()
         }}>
 			Save Config
 		</button>

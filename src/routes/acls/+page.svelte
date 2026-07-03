@@ -12,7 +12,7 @@
 	import type { ACL } from '$lib/common/acl.svelte';
 	import { PolicyBuilder } from '$lib/common/policy-builder';
 	import { debug } from '$lib/common/debug';
-	import { getPolicy } from '$lib/common/api';
+	import { loadPolicyDocumentText } from '$lib/common/policy-persistence';
 	import { toastError } from '$lib/common/funcs';
 	import Page from '$lib/page/Page.svelte';
 	import PageHeader from '$lib/page/PageHeader.svelte';
@@ -42,7 +42,7 @@
 	];
 
 	onMount(() => {
-		getPolicy().then(policy => {
+		loadPolicyDocumentText().then(policy => {
 			acl = PolicyBuilder.fromPolicy(JWCC.parse<ACL>(policy))
 		}).catch(reason => {
 			debug("failed to get policy:", reason)

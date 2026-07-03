@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { Accordion, getToastStore } from '@skeletonlabs/skeleton';
-	import { ACLBuilder, saveConfig, type AclSshRules, type AclSshRulesIndexed } from '$lib/common/acl.svelte';
+	import { ACLBuilder, type AclSshRules, type AclSshRulesIndexed } from '$lib/common/acl.svelte';
 	import { debug } from '$lib/common/debug';
-	import { toastSuccess } from '$lib/common/funcs';
+	import { toastError, toastSuccess } from '$lib/common/funcs';
+	import { savePolicyDocument } from '$lib/common/policy-persistence';
 	import CardListPage from '$lib/cards/CardListPage.svelte';
 	import RawMdiSave from '~icons/mdi/content-save-outline'
 
@@ -53,14 +54,27 @@
 			toastSuccess('Created SSH Rule #' + acl.acls.length, ToastStore)
 		}
 	}
+
+	async function saveCurrentPolicy() {
+		loading = true;
+		try {
+			await savePolicyDocument(acl);
+			toastSuccess('Saved ACL Configuration', ToastStore);
+		} catch (e) {
+			if (e instanceof Error) {
+				toastError('', ToastStore, e);
+			}
+			debug(e);
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 <CardListPage>
 	<div class="mb-2">
 		<div class="flex flex-row space-x-2">
-			<button disabled={loading} class="btn-icon rounded-md variant-filled-success disabled:opacity-50 w-8 text-xl" onclick={() => { 
-				saveConfig(acl, ToastStore, {setLoadingTrue: () => { loading = true}, setLoadingFalse: ()=> { loading = false }})
-			}}>
+			<button disabled={loading} class="btn-icon rounded-md variant-filled-success disabled:opacity-50 w-8 text-xl" onclick={saveCurrentPolicy}>
 				<RawMdiSave />
 			</button>
 			<button class="btn-sm rounded-md variant-filled-success" onclick={newSshRule}>
