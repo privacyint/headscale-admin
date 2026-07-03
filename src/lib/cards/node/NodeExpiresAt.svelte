@@ -14,11 +14,12 @@
 
 	let { node, loading = $bindable(false) }: NodeExpiresAtProps = $props()
 
-	let diff = $state(getTimeDifference(getTime(node.expiry)));
+	const getDiff = () => getTimeDifference(getTime(node.expiry))
+	let diff = $state(getDiff());
 
 	onMount(() => {
 		const interval = setInterval(() => {
-			diff = getTimeDifference(getTime(node.expiry));
+			diff = getDiff();
 		}, 1000);
 
 		return () => {

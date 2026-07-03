@@ -26,24 +26,49 @@
 </script>
 
 <div class="grid py-0 grid-cols-12">
-	<div class="grid grid-cols-12 col-span-12 justify-between {top ? 'items-top' : 'items-center'}" {onclick}>
-		<!-- Left-aligned title -->
-		<div class="grid col-span-5 {titleClasses}">
-			{#if title !== undefined}
-				{title}
-			{:else if childTitle !== undefined}
-			 	{@render childTitle()}
-			{/if}
+	{#if onclick !== undefined}
+		<button
+			type="button"
+			class="grid grid-cols-12 col-span-12 justify-between {top ? 'items-top' : 'items-center'} text-inherit"
+			onclick={onclick}
+		>
+			<!-- Left-aligned title -->
+			<div class="grid col-span-5 {titleClasses}">
+				{#if title !== undefined}
+					{title}
+				{:else if childTitle !== undefined}
+					{@render childTitle()}
+				{/if}
+			</div>
+			<!-- Right-aligned slot or value -->
+			<div class="grid col-span-7 {valueClasses}">
+				{#if value !== undefined}
+					{value}
+				{:else if children !== undefined}
+					{@render children()}
+				{/if}
+			</div>
+		</button>
+	{:else}
+		<div class="grid grid-cols-12 col-span-12 justify-between {top ? 'items-top' : 'items-center'}">
+			<!-- Left-aligned title -->
+			<div class="grid col-span-5 {titleClasses}">
+				{#if title !== undefined}
+					{title}
+				{:else if childTitle !== undefined}
+					{@render childTitle()}
+				{/if}
+			</div>
+			<!-- Right-aligned slot or value -->
+			<div class="grid col-span-7 {valueClasses}">
+				{#if value !== undefined}
+					{value}
+				{:else if children !== undefined}
+					{@render children()}
+				{/if}
+			</div>
 		</div>
-		<!-- Right-aligned slot or value -->
-		<div class="grid col-span-7 {valueClasses}">
-			{#if value !== undefined}
-				{value}
-			{:else if children !== undefined}
-				{@render children()}
-			{/if}
-		</div>
-	</div>
+	{/if}
 	{#if childBottom}
 		{@render childBottom()}
 	{/if}
