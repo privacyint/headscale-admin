@@ -9,16 +9,25 @@
 		id: string;
 	};
 	let { tags, id }: NodeTagsIconProps = $props();
+	let popupOpen = $state(false);
 
 	const popupHover: PopupSettings = {
 		event: 'hover',
 		target: `tags-popup-${id}`,
 		placement: 'bottom',
+		state: ({ state }) => {
+			popupOpen = state;
+		},
 	};
 </script>
 
 {#if tags.length > 0}
-	<span class="inline-flex items-center" use:popup={popupHover} data-testid="node-tags-icon">
+	<span
+		class="inline-flex items-center"
+		use:popup={popupHover}
+		data-testid="node-tags-icon"
+		data-popup-open={popupOpen}
+	>
 		<RawMdiTag class="text-warning-500 dark:text-warning-400 cursor-help" />
 	</span>
 	<div class="card p-3 variant-filled-surface shadow-xl z-50" data-popup="tags-popup-{id}">
