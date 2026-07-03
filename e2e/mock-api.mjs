@@ -429,18 +429,7 @@ let preAuthKeys;
 let apiKeys;
 let userNodeMap;
 
-function resetState() {
-  _nodeId = 0;
-  users = structuredClone(baseUsers);
-  nodes = createNodes(users);
-  preAuthKeys = createPreAuthKeys(users);
-  apiKeys = createApiKeys();
-  userNodeMap = buildUserNodeMap(nodes, users);
-}
-
-resetState();
-
-const policy = JSON.stringify({
+const defaultPolicy = {
   groups: {
     'group:admin':   ['alice', 'bob'],
     'group:dev':     ['carol', 'dave', 'eve', 'frank.garcia', 'grace'],
@@ -476,7 +465,21 @@ const policy = JSON.stringify({
     { action: 'accept', src: ['group:admin'], dst: ['*'], users: ['root', 'headscale-user'] },
     { action: 'accept', src: ['group:dev'],   dst: ['tag:server'], users: ['deploy'] },
   ],
-});
+};
+
+let policyDocumentText = JSON.stringify(defaultPolicy);
+
+function resetState() {
+  _nodeId = 0;
+  users = structuredClone(baseUsers);
+  nodes = createNodes(users);
+  preAuthKeys = createPreAuthKeys(users);
+  apiKeys = createApiKeys();
+  userNodeMap = buildUserNodeMap(nodes, users);
+  policyDocumentText = JSON.stringify(defaultPolicy);
+}
+
+resetState();
 
 const versionInfo = {
   version: 'v0.28.0',
@@ -569,7 +572,7 @@ const server = createServer((req, res) => {
     }
     if (path === '/api/v1/preauthkey') return json(res, { preAuthKeys });
     if (path === '/api/v1/apikey')     return json(res, { apiKeys });
-    if (path === '/api/v1/policy')     return json(res, { policy, updatedAt: new Date().toISOString() });
+    if (path === '/api/v1/policy')     return json(res, { policy: policyDocumentText, updatedAt: new Date().toISOString() });
     if (path === '/api/v1/health')     return json(res, healthInfo);
 
     // Single node GET: /api/v1/node/{id}
@@ -653,7 +656,24 @@ const server = createServer((req, res) => {
 
   // ── PUT endpoints ───────────────────────────────────────────────────────
   if (method === 'PUT') {
-    if (path === '/api/v1/policy') return json(res, { policy, updatedAt: new Date().toISOString() });
+    if (path === '/api/v1/policy') {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          if (typeof parsed.policy === 'string') {
+            policyDocumentText = parsed.policy;
+          }
+        } catch {
+          // Keep existing policy content when payload is invalid.
+        }
+        return json(res, { policy: policyDocumentText, updatedAt: new Date().toISOString() });
+      });
+      return;
+    }
   }
 
   // ── DELETE endpoints ────────────────────────────────────────────────────
