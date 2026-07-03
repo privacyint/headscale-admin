@@ -18,7 +18,7 @@
 		state: ({ state }) => {
 			popupOpen = state;
 		},
-	};
+	});
 </script>
 
 {#if tags.length > 0}
