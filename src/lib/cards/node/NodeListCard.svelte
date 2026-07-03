@@ -17,10 +17,21 @@
 
 </script>
 
+<style>
+	:global(.node-list-card) {
+		position: relative;
+		z-index: 0;
+	}
+
+	:global(.node-list-card:has([data-popup-open='true'])) {
+		z-index: 60;
+	}
+</style>
+
 <AccordionItem
 	{open}
 	bind:id={node.id}
-	class="backdrop-blur-xl backdrop-brightness-100 bg-white/25 dark:bg-white/5 rounded-md"
+	class="node-list-card backdrop-blur-xl backdrop-brightness-100 bg-white/25 dark:bg-white/5 rounded-md"
 	padding="py-4 px-4"
 	regionControl="!rounded-none"
 >
