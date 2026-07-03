@@ -8,7 +8,6 @@
 
 	import Page from '$lib/page/Page.svelte';
 	import type { User, Direction, OnlineStatus } from '$lib/common/types';
-	import { isTaggedDevice } from '$lib/common/types';
 	import SortBtn from '$lib/parts/SortBtn.svelte';
 	import { App } from '$lib/States.svelte';
 	import { getSortedFilteredUsers, getNodesForUser } from '$lib/common/funcs';
@@ -31,7 +30,7 @@
 		);
 		if (filterTagged) {
 			users = users.filter((u) =>
-				getNodesForUser(App.nodes.value, u).some(isTaggedDevice),
+				getNodesForUser(App.nodes.value, u).some((n) => n.tags.length > 0),
 			);
 		}
 		return users;
@@ -70,13 +69,14 @@
 		<FilterOnlineBtn bind:value={filterOnlineStatus} status="online" name="Online" />
 		<FilterOnlineBtn bind:value={filterOnlineStatus} status="offline" name="Offline" />
 	</div>
-	<div class="inline-flex ml-2">
-		<button
-			class="btn btn-sm rounded-md {filterTagged ? 'variant-filled-warning' : 'variant-ghost-secondary'}"
-			onclick={() => { filterTagged = !filterTagged }}
-		>
-			<RawMdiTag class="pr-1" />
-			Tagged
+	<div
+		class="btn-group ml-2 px-0 mx-0 py-0 my-0 rounded-md variant-ghost-secondary [&>*+*]:border-primary-500"
+	>
+		<button onclick={() => { filterTagged = !filterTagged }}>
+			<span class={"flex flex-row items-center " + (filterTagged ? '' : 'opacity-50')}>
+				<RawMdiTag class="pr-1 text-warning-500 dark:text-warning-400" />
+				Tagged
+			</span>
 		</button>
 	</div>
 

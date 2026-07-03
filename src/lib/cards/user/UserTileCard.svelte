@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { xxHash32 } from 'js-xxhash';
 	import { type User, type Node, getUserDisplay } from '$lib/common/types';
-	import { isTaggedDevice } from '$lib/common/types';
 	import { dateToStr, openDrawer, getNodesForUser } from '$lib/common/funcs';
 	import { getDrawerStore } from '@skeletonlabs/skeleton';
 	import CardTileContainer from '../CardTileContainer.svelte';
@@ -15,7 +14,7 @@
 
 	const userNodes = $derived(getNodesForUser(App.nodes.value, user));
 	const nodeCount = $derived(userNodes.length);
-	const taggedCount = $derived(userNodes.filter(isTaggedDevice).length);
+	const taggedCount = $derived(userNodes.filter((n) => n.tags.length > 0).length);
 	const drawerStore = getDrawerStore();
 	const color = $derived(
 		(xxHash32(user.id + ':' + user.name, 0xbeefbabe) & 0xff_ff_ff)

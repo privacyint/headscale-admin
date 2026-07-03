@@ -1,8 +1,9 @@
 <script lang="ts">
 	import CardListEntry from '../CardListEntry.svelte';
 	import type { Node } from '$lib/common/types';
-	import { getNodeOwner, isTaggedDevice, isOrphanTaggedDevice } from '$lib/common/types';
+	import { getNodeOwner, isOrphanTaggedDevice } from '$lib/common/types';
 	import OnlineUserIndicator from '$lib/parts/OnlineUserIndicator.svelte';
+	import NodeTagsIcon from '$lib/parts/NodeTagsIcon.svelte';
 	import { openDrawer } from '$lib/common/funcs';
 	import { getDrawerStore } from '@skeletonlabs/skeleton';
 
@@ -15,7 +16,6 @@
 
 	const drawerStore = getDrawerStore();
 	const owner = $derived(getNodeOwner(node));
-	const tagged = $derived(isTaggedDevice(node));
 	const orphan = $derived(isOrphanTaggedDevice(node));
 
 </script>
@@ -34,8 +34,8 @@
 			>
 				{owner.name}
 			</a>
-			{#if tagged}
-				<span class="badge variant-soft-warning text-xs px-1.5 py-0.5">tagged</span>
+			{#if node.tags.length > 0}
+				<NodeTagsIcon tags={node.tags} id="owner-{node.id}" />
 			{/if}
 			<OnlineUserIndicator user={owner} />
 		{/if}

@@ -154,10 +154,38 @@ test.describe('authenticated navigation', () => {
     await expect(page.getByText(/^nodes online$/i)).toBeVisible();
   });
 
+  test('dashboard shows exit nodes count', async ({ page }) => {
+    await page.goto('/');
+    // Fixture currently includes multiple exit nodes.
+    const exitCard = page.getByRole('button', { name: /exit nodes online/i });
+    await expect(exitCard).toBeVisible({ timeout: 10000 });
+    // Assert a ratio is displayed, without hard-coding exact fixture counts.
+    await expect(exitCard.getByText(/\d+\s*\/\s*\d+/)).toBeVisible();
+  });
+
   test('/nodes/ renders node list', async ({ page }) => {
     await page.goto('/nodes/');
     // Node from fixture data
     await expect(page.getByText('alice-laptop')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('/nodes/ shows tag icon on tagged nodes', async ({ page }) => {
+    await page.goto('/nodes/');
+    // server-web-01 has tag:server — should have a tag icon
+    await expect(page.getByText('server-web-01')).toBeVisible({ timeout: 10000 });
+    const tagIcons = page.locator('[data-testid="node-tags-icon"]');
+    // tagged nodes should render tag icons
+    await expect(tagIcons.first()).toBeVisible();
+  });
+
+  test('/nodes/ tag icon hover shows tag badges', async ({ page }) => {
+    await page.goto('/nodes/');
+    await expect(page.getByText('server-web-01')).toBeVisible({ timeout: 10000 });
+    // Hover over the first tag icon to trigger the popup
+    const tagIcon = page.locator('[data-testid="node-tags-icon"]').first();
+    await tagIcon.hover();
+    // The popup should show a tag badge
+    await expect(page.locator('[data-testid="tag-badge"]').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('/users/ renders user list', async ({ page }) => {
@@ -251,7 +279,7 @@ test.describe('back button', () => {
     // Navigate to users
     await page.getByRole('link', { name: /users/i }).first().click();
     await expect(page).toHaveURL(/\/users\/?/);
-    await expect(page.getByText('alice (Alice)')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('alice (Alice Andersen)')).toBeVisible({ timeout: 10000 });
 
     // Go back to nodes
     await page.goBack();

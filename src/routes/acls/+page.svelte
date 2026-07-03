@@ -52,6 +52,14 @@
 
 <Page>
 	<PageHeader title="ACL Builder" />
+	{#if acl.hasUnsupportedPolicyFields()}
+		<div class="mb-4 rounded-md border border-warning-500/50 bg-warning-50 p-3 text-sm text-warning-900 dark:bg-warning-900/20 dark:text-warning-100">
+			<div class="font-semibold">Compatibility warning</div>
+			<div>
+				This policy includes fields outside the legacy ACL editor model. Saving keeps those fields, but edits in legacy sections may not expose all advanced settings.
+			</div>
+		</div>
+	{/if}
 	<TabGroup
 		justify="justify-left"
 		active="variant-filled-secondary"

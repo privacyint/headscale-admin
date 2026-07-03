@@ -2,11 +2,11 @@
 	import { AccordionItem } from '@skeletonlabs/skeleton';
 
 	import type { Node } from '$lib/common/types';
-	import { isTaggedDevice } from '$lib/common/types';
 
 	import CardListEntry from '../CardListEntry.svelte';
 	import NodeInfo from './NodeInfo.svelte';
 	import OnlineNodeIndicator from '$lib/parts/OnlineNodeIndicator.svelte';
+	import NodeTagsIcon from '$lib/parts/NodeTagsIcon.svelte';
 
 	type NodeListCardProps = {
 		node: Node,
@@ -31,8 +31,8 @@
 		<div class="grid">
 			<CardListEntry title="ID: {node.id}">
 				<span class="font-bold">{node.givenName}</span>
-				{#if isTaggedDevice(node)}
-					<span class="badge variant-soft-warning text-xs px-1.5 py-0.5 ml-2">tagged</span>
+				{#if node.tags.length > 0}
+					<span class="ml-1"><NodeTagsIcon tags={node.tags} id="node-list-{node.id}" /></span>
 				{/if}
 			</CardListEntry>
 		</div>

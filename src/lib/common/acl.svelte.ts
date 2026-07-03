@@ -3,6 +3,7 @@ import { isValidCIDR, isValidIP, toastError, toastSuccess } from "$lib/common/fu
 import { setPolicy } from './api'
 import type { ToastStore } from '@skeletonlabs/skeleton'
 import { debug } from './debug'
+import { parsePolicyDocument, serialisePolicyDocument, type LegacyPolicySection } from './policy-document'
 
 export type TagOwners = string[]
 export type TagOwnersTyped = { users: string[], groups: string[], tags: string[] }
@@ -68,6 +69,9 @@ const RegexTagName = /^[^\s:]+$/
 const RegexHostName = /^[a-z0-9-\.]+$/
 
 export class ACLBuilder implements ACL {
+    #policyRaw: Record<string, unknown> | undefined
+    #unsupportedPolicyFields: string[]
+
     groups = $state<AclGroups>({})
     tagOwners = $state<AclTagOwners>({})
     hosts = $state<AclHosts>({})
@@ -80,22 +84,40 @@ export class ACLBuilder implements ACL {
         hosts: AclHosts,
         acls: AclPolicies,
         ssh?: AclSshRules,
+        policyRaw?: Record<string, unknown>,
+        unsupportedPolicyFields: string[] = [],
     ) {
         this.groups = groups
         this.tagOwners = tagOwners
         this.hosts = hosts
         this.acls = acls
         this.ssh = ssh
+        this.#policyRaw = policyRaw
+        this.#unsupportedPolicyFields = unsupportedPolicyFields
     }
 
     JSON(space: number = 0): string {
-        return JSON.stringify({
+        const legacyPolicy: LegacyPolicySection = {
             groups: this.groups,
             tagOwners: this.tagOwners,
             hosts: this.hosts,
             acls: this.acls,
             ssh: this.ssh,
-        }, null, space)
+        }
+
+        if (this.#policyRaw !== undefined) {
+            return serialisePolicyDocument(this.#policyRaw, legacyPolicy, space)
+        }
+
+        return JSON.stringify(legacyPolicy, null, space)
+    }
+
+    hasUnsupportedPolicyFields(): boolean {
+        return this.#unsupportedPolicyFields.length > 0
+    }
+
+    getUnsupportedPolicyFields(): string[] {
+        return [...this.#unsupportedPolicyFields]
     }
 
     static emptyACL(): ACLBuilder {
@@ -119,18 +141,17 @@ export class ACLBuilder implements ACL {
     }
 
     static fromPolicy(acl: ACL | string): ACLBuilder {
-        if (typeof acl === "string"){
-            return this.fromPolicy(JWCC.parse<ACL>(acl))
-        }
-
-        const ssh = acl.ssh ? [...acl.ssh] : []
+        const doc = parsePolicyDocument(acl)
+        const ssh = doc.legacy.ssh ? [...doc.legacy.ssh as AclSshRules] : []
 
         return new ACLBuilder(
-            {...acl.groups},
-            {...acl.tagOwners},
-            {...acl.hosts},
-            [...acl.acls],
+            { ...doc.legacy.groups },
+            { ...doc.legacy.tagOwners },
+            { ...doc.legacy.hosts },
+            [...doc.legacy.acls as AclPolicies],
             [...ssh],
+            doc.raw,
+            doc.unsupportedFields,
         )
     }
 
