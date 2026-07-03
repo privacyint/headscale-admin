@@ -5,7 +5,10 @@
 	import RawMdiCodeJSON from '~icons/mdi/code-json';
 	import RawMdiConsole from '~icons/mdi/console';
 	import RawMdiDevices from '~icons/mdi/devices';
+	import RawMdiTune from '~icons/mdi/tune';
 	import RawMdiGroups from '~icons/mdi/account-group';
+	import RawMdiKeyChain from '~icons/mdi/key-chain-variant';
+	import RawMdiVectorPolyline from '~icons/mdi/vector-polyline';
 	import RawMdiSecurity from '~icons/mdi/security';
 	import RawMdiTag from '~icons/mdi/tag';
 
@@ -21,7 +24,10 @@
 	import Config from './Config.svelte';
 	import Groups from './Groups.svelte';
 	import Hosts from './Hosts.svelte';
+	import NodeAttrs from './NodeAttrs.svelte';
+	import PolicySettings from './PolicySettings.svelte';
 	import Policies from './Policies.svelte';
+	import Grants from './Grants.svelte';
 	import TagOwners from './TagOwners.svelte'
 	import SshRules from './SshRules.svelte';
 
@@ -37,6 +43,9 @@
 		{ name: 'tag-owners', title: 'Tag Owners', logo: RawMdiTag },
 		{ name: 'hosts', title: 'Hosts', logo: RawMdiDevices },
 		{ name: 'policies', title: 'Policies', logo: RawMdiSecurity },
+		{ name: 'grants', title: 'Grants', logo: RawMdiKeyChain },
+		{ name: 'node-attrs', title: 'Node Attributes', logo: RawMdiVectorPolyline },
+		{ name: 'policy-settings', title: 'Policy Settings', logo: RawMdiTune },
 		{ name: 'ssh', title: 'SSH', logo: RawMdiConsole },
 		{ name: 'config', title: 'Config', logo: RawMdiCodeJSON },
 	];
@@ -82,6 +91,12 @@
 				<Hosts bind:loading bind:acl />
 			{:else if tabs[tabSet].name == 'policies'}
 				<Policies bind:loading bind:acl />
+			{:else if tabs[tabSet].name == 'grants'}
+				<Grants bind:loading bind:acl />
+			{:else if tabs[tabSet].name == 'node-attrs'}
+				<NodeAttrs bind:loading bind:acl />
+			{:else if tabs[tabSet].name == 'policy-settings'}
+				<PolicySettings bind:loading bind:acl />
 			{:else if tabs[tabSet].name == 'ssh'}
 				<SshRules bind:loading bind:acl />
 			{:else if tabs[tabSet].name == 'config'}
