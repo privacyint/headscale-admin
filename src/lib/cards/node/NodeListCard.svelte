@@ -41,10 +41,12 @@
 	<svelte:fragment slot="summary">
 		<div class="grid">
 			<CardListEntry title="ID: {node.id}">
-				<span class="font-bold">{node.givenName}</span>
-				{#if node.tags.length > 0}
-					<span class="ml-1"><NodeTagsIcon tags={node.tags} id="node-list-{node.id}" /></span>
-				{/if}
+				<span class="inline-flex items-center justify-self-end gap-1.5 font-bold">
+					{node.givenName}
+					{#if node.tags.length > 0}
+						<NodeTagsIcon tags={node.tags} id="node-list-{node.id}" />
+					{/if}
+				</span>
 			</CardListEntry>
 		</div>
 	</svelte:fragment>
