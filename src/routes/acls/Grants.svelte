@@ -8,6 +8,12 @@
 	import { deduplicate, toastError, toastSuccess } from '$lib/common/funcs';
 	import { debug } from '$lib/common/debug';
 
+	type CapabilityFormRow = {
+		id: string;
+		key: string;
+		value: string;
+	};
+
 	const ToastStore = getToastStore();
 
 	let { acl = $bindable(), loading = $bindable(false) }: { acl: PolicyBuilder; loading?: boolean } = $props();
@@ -24,7 +30,8 @@
 	);
 	const viaTagOptions = $derived(deduplicate(acl.getTagNames(true)));
 
-	let appEditors = $state<Record<number, string>>({});
+	let capabilityForms = $state<Record<number, CapabilityFormRow[]>>({});
+	let capabilityRowCounter = $state(0);
 
 	const grants = $derived.by(() => {
 		const list = acl.grants ?? [];
@@ -34,6 +41,31 @@
 			grant.via ??= [];
 		}
 		return list;
+	});
+
+	$effect(() => {
+		const list = grants;
+		const next: Record<number, CapabilityFormRow[]> = { ...capabilityForms };
+		let changed = false;
+
+		for (let idx = 0; idx < list.length; idx += 1) {
+			if (next[idx] === undefined) {
+				next[idx] = rowsFromGrant(list[idx]);
+				changed = true;
+			}
+		}
+
+		for (const k of Object.keys(next)) {
+			const idx = Number.parseInt(k, 10);
+			if (idx >= list.length) {
+				delete next[idx];
+				changed = true;
+			}
+		}
+
+		if (changed) {
+			capabilityForms = next;
+		}
 	});
 
 	function currentGrants(): PolicyGrant[] {
@@ -49,6 +81,8 @@
 			...currentGrants(),
 			{ src: ['*'], dst: ['*'], ip: [], srcPosture: [], via: [] } satisfies PolicyGrant,
 		];
+		const idx = next.length - 1;
+		capabilityForms[idx] = [{ id: `cap-${capabilityRowCounter++}`, key: '', value: '[]' }];
 		updateGrants(next);
 		toastSuccess(`Added grant #${next.length}`, ToastStore);
 	}
@@ -57,7 +91,20 @@
 		const next = [...currentGrants()];
 		next.splice(idx, 1);
 		updateGrants(next);
-		delete appEditors[idx];
+		reindexCapabilityFormsAfterDelete(idx);
+	}
+
+	function reindexCapabilityFormsAfterDelete(deletedIdx: number) {
+		const next: Record<number, CapabilityFormRow[]> = {};
+		for (const [k, v] of Object.entries(capabilityForms)) {
+			const idx = Number.parseInt(k, 10);
+			if (idx < deletedIdx) {
+				next[idx] = v;
+			} else if (idx > deletedIdx) {
+				next[idx - 1] = v;
+			}
+		}
+		capabilityForms = next;
 	}
 
 	function removeItem(items: string[], item: string) {
@@ -76,23 +123,58 @@
 			grant.app = {};
 		}
 		grant.app['tailscale.com/cap/drive'] = [{ shares: ['*'] }, { access: ['*'] }];
-		appEditors[idx] = JSON.stringify(grant.app, null, 2);
+		capabilityForms[idx] = [
+			{
+				id: `cap-${capabilityRowCounter++}`,
+				key: 'tailscale.com/cap/drive',
+				value: JSON.stringify([{ shares: ['*'] }, { access: ['*'] }], null, 2),
+			},
+		];
 		updateGrants([...currentGrants()]);
 		toastSuccess('Applied Taildrive app preset', ToastStore);
 	}
 
-	function applyAppJson(idx: number) {
+	function rowsFromGrant(grant: PolicyGrant): CapabilityFormRow[] {
+		const rows: CapabilityFormRow[] = Object.entries(grant.app ?? {}).map(([key, value]) => ({
+			id: `cap-${capabilityRowCounter++}`,
+			key,
+			value: JSON.stringify(value, null, 2),
+		}));
+		return rows.length > 0
+			? rows
+			: [{ id: `cap-${capabilityRowCounter++}`, key: '', value: '[]' }];
+	}
+
+	function addCapabilityRow(idx: number) {
+		const rows = capabilityForms[idx] ?? [];
+		rows.push({ id: `cap-${capabilityRowCounter++}`, key: '', value: '[]' });
+		capabilityForms[idx] = rows;
+	}
+
+	function removeCapabilityRow(idx: number, id: string) {
+		const rows = capabilityForms[idx] ?? [];
+		capabilityForms[idx] = rows.filter((row) => row.id !== id);
+	}
+
+	function applyCapabilityForm(idx: number) {
 		const grant = currentGrants()[idx];
 		if (grant === undefined) {
 			return;
 		}
 		try {
-			const text = appEditors[idx] ?? '{}';
-			const parsed = JSON.parse(text) as Record<string, unknown>;
+			const rows = capabilityForms[idx] ?? [];
 			const normalised: Record<string, unknown[]> = {};
-			for (const [key, value] of Object.entries(parsed)) {
+			for (const row of rows) {
+				const key = row.key.trim();
+				if (key.length === 0) {
+					continue;
+				}
+				const value = JSON.parse(row.value) as unknown;
 				if (!Array.isArray(value)) {
 					throw new Error(`Capability '${key}' must be a JSON array`);
+				}
+				if (Object.prototype.hasOwnProperty.call(normalised, key)) {
+					throw new Error(`Duplicate capability key '${key}'`);
 				}
 				normalised[key] = value;
 			}
@@ -196,23 +278,45 @@
 				</div>
 				<div class="lg:col-span-2" data-testid={`grant-app-editor-${idx}`}>
 					<div class="mb-2 flex items-center justify-between">
-						<label class="label" for={`grant-app-json-${idx}`}>app capabilities (optional)</label>
+						<label class="label">app capabilities (optional)</label>
 						<button class="btn btn-xs rounded-md variant-soft-secondary" onclick={() => addTaildrivePreset(idx)} data-testid={`grant-taildrive-preset-${idx}`}>
 							Apply Taildrive preset
 						</button>
 					</div>
-					<textarea
-						id={`grant-app-json-${idx}`}
-						class="textarea rounded-md w-full min-h-40"
-						bind:value={appEditors[idx]}
-						onfocus={() => {
-							if (appEditors[idx] === undefined) {
-								appEditors[idx] = JSON.stringify(grant.app ?? {}, null, 2);
-							}
-						}}
-					></textarea>
+					<div class="space-y-3">
+						{#each (capabilityForms[idx] ?? []) as row (row.id)}
+							<div class="rounded-md border border-surface-300-700-token p-3">
+								<div class="mb-2 grid grid-cols-12 gap-2 items-end">
+									<div class="col-span-10">
+										<label class="label" for={`grant-app-key-${idx}-${row.id}`}>Capability key</label>
+										<input
+											id={`grant-app-key-${idx}-${row.id}`}
+											class="input rounded-md w-full"
+											placeholder="tailscale.com/cap/drive"
+											bind:value={row.key}
+										/>
+									</div>
+									<div class="col-span-2 text-right">
+										<button
+											class="btn btn-xs rounded-md variant-soft-error"
+											onclick={() => removeCapabilityRow(idx, row.id)}
+										>
+											Remove
+										</button>
+									</div>
+								</div>
+								<label class="label" for={`grant-app-value-${idx}-${row.id}`}>Capability value (JSON array)</label>
+								<textarea
+									id={`grant-app-value-${idx}-${row.id}`}
+									class="textarea rounded-md w-full min-h-24"
+									bind:value={row.value}
+								></textarea>
+							</div>
+						{/each}
+					</div>
 					<div class="mt-2">
-						<button class="btn btn-xs rounded-md variant-soft-primary" onclick={() => applyAppJson(idx)} data-testid={`grant-apply-app-${idx}`}>Apply app JSON</button>
+						<button class="btn btn-xs rounded-md variant-soft-tertiary mr-2" onclick={() => addCapabilityRow(idx)}>Add capability</button>
+						<button class="btn btn-xs rounded-md variant-soft-primary" onclick={() => applyCapabilityForm(idx)} data-testid={`grant-apply-app-${idx}`}>Apply capability form</button>
 					</div>
 					<p class="mt-1 text-xs opacity-80">Each capability key maps to a JSON array value. Use the Taildrive preset for a safe starter payload.</p>
 				</div>

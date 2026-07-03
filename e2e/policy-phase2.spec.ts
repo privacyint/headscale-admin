@@ -37,7 +37,7 @@ test.describe('policy builder phase 2', () => {
     await page.getByRole('button', { name: 'Create Grant' }).click();
     await expect(page.getByRole('heading', { name: 'Grant #1' })).toBeVisible();
     await page.getByRole('button', { name: 'Apply Taildrive preset' }).first().click();
-    await page.getByRole('button', { name: 'Apply app JSON' }).first().click();
+    await page.getByRole('button', { name: 'Apply capability form' }).first().click();
 
     await page.getByRole('tab', { name: 'Node Attributes' }).click();
     await page.getByRole('button', { name: 'Create Node Attribute Rule' }).click();
@@ -64,7 +64,7 @@ test.describe('policy builder phase 2', () => {
     await page.getByRole('tab', { name: 'Grants' }).click();
     await page.getByRole('button', { name: 'Create Grant' }).click();
     await page.getByRole('button', { name: 'Apply Taildrive preset' }).first().click();
-    await page.getByRole('button', { name: 'Apply app JSON' }).first().click();
+    await page.getByRole('button', { name: 'Apply capability form' }).first().click();
 
     await page.getByRole('tab', { name: 'Config' }).click();
     await page.getByRole('button', { name: 'Save Config' }).click();
