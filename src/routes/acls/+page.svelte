@@ -9,9 +9,10 @@
 	import RawMdiSecurity from '~icons/mdi/security';
 	import RawMdiTag from '~icons/mdi/tag';
 
-	import { ACLBuilder, type ACL } from '$lib/common/acl.svelte';
+	import type { ACL } from '$lib/common/acl.svelte';
+	import { PolicyBuilder } from '$lib/common/policy-builder';
 	import { debug } from '$lib/common/debug';
-	import { getPolicy } from '$lib/common/api';
+	import { loadPolicyDocumentText } from '$lib/common/policy-persistence';
 	import { toastError } from '$lib/common/funcs';
 	import Page from '$lib/page/Page.svelte';
 	import PageHeader from '$lib/page/PageHeader.svelte';
@@ -26,7 +27,7 @@
 
 	const ToastStore = getToastStore()
 
-	let acl = $state(ACLBuilder.defaultACL());
+	let acl = $state(PolicyBuilder.defaultACL());
 	let loading = $state(false)
 
 	// Navigation tabs
@@ -41,8 +42,8 @@
 	];
 
 	onMount(() => {
-		getPolicy().then(policy => {
-			acl = ACLBuilder.fromPolicy(JWCC.parse<ACL>(policy))
+		loadPolicyDocumentText().then(policy => {
+			acl = PolicyBuilder.fromPolicy(JWCC.parse<ACL>(policy))
 		}).catch(reason => {
 			debug("failed to get policy:", reason)
 			toastError(`Unable to get policy from server.`, ToastStore, reason)
@@ -51,12 +52,12 @@
 </script>
 
 <Page>
-	<PageHeader title="ACL Builder" />
+	<PageHeader title="Policy Builder" />
 	{#if acl.hasUnsupportedPolicyFields()}
 		<div class="mb-4 rounded-md border border-warning-500/50 bg-warning-50 p-3 text-sm text-warning-900 dark:bg-warning-900/20 dark:text-warning-100">
 			<div class="font-semibold">Compatibility warning</div>
 			<div>
-				This policy includes fields outside the legacy ACL editor model. Saving keeps those fields, but edits in legacy sections may not expose all advanced settings.
+				This policy includes fields outside the current editor model. Saving keeps those fields, but ACL tabs may not expose all advanced settings.
 			</div>
 		</div>
 	{/if}

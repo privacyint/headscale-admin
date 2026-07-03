@@ -9,7 +9,8 @@
 	}
 	let { preAuthKey }: PreAuthKeyDetailsProps = $props()
 
-	let pakIsExpired = $state(isExpired(preAuthKey))
+	const getPakIsExpired = () => isExpired(preAuthKey)
+	let pakIsExpired = $state(getPakIsExpired())
 	const ownershipLabel = $derived(preAuthKey.user ? 'User:' : 'Tags:')
 	const ownershipValue = $derived(preAuthKey.user ? preAuthKey.user.name : preAuthKey.aclTags.join(', '))
 
@@ -19,7 +20,7 @@
 
 	onMount(()=>{
 		const interval = setInterval(() => {
-			pakIsExpired = isExpired(preAuthKey)
+			pakIsExpired = getPakIsExpired()
 		}, 1000)
 
 		return () => {

@@ -14,16 +14,16 @@
 
 	let { name, help, checked = $bindable(), children = undefined }: DeployCheckTypes = $props()
 
-	const popupId = xxHash32(name).toString();
+	const popupId = $derived(xxHash32(name).toString());
 	let popupShow = $state(false);
 
 	let timerInfo: ReturnType<typeof setTimeout>;
 
-	const popupInfo: PopupSettings = {
+	const popupInfo = $derived<PopupSettings>({
 		event: 'hover',
 		target: 'popupHover-' + popupId,
 		placement: 'top',
-	};
+	});
 
 	function handleMouseEnter() {
 		timerInfo = setTimeout(() => {

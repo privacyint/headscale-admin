@@ -9,11 +9,12 @@
 	}
 	let { node }: NodeLastSeenProps = $props()
 
-	let lastSeen = $state(getTimeDifferenceMessage(getTime(node.lastSeen)));
+	const getLastSeen = () => getTimeDifferenceMessage(getTime(node.lastSeen))
+	let lastSeen = $state(getLastSeen());
 
 	onMount(() => {
 		const interval = setInterval(() => {
-			lastSeen = getTimeDifferenceMessage(getTime(node.lastSeen));
+			lastSeen = getLastSeen();
 		}, 1000);
 		return () => {
 			clearInterval(interval);
