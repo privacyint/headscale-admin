@@ -171,7 +171,7 @@ export class ACLBuilder implements ACL {
         return policy["#ha-meta"] !== undefined
     }
 
-    static fromPolicy(acl: ACL | string): ACLBuilder {
+    static fromPolicy(acl: ACL | string | Record<string, unknown>): ACLBuilder {
         const doc = parsePolicyDocument(acl)
         const ssh = doc.legacy.ssh ? [...doc.legacy.ssh as AclSshRules] : []
 
