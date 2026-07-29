@@ -33,15 +33,7 @@
 	let capabilityForms = $state<Record<number, CapabilityFormRow[]>>({});
 	let capabilityRowCounter = $state(0);
 
-	const grants = $derived.by(() => {
-		const list = acl.grants ?? [];
-		for (const grant of list) {
-			grant.ip ??= [];
-			grant.srcPosture ??= [];
-			grant.via ??= [];
-		}
-		return list;
-	});
+	const grants = $derived(acl.grants ?? []);
 
 	$effect(() => {
 		const list = grants;
@@ -107,22 +99,38 @@
 		capabilityForms = next;
 	}
 
-	function removeItem(items: string[], item: string) {
-		const idx = items.findIndex((v) => v === item);
-		if (idx >= 0) {
-			items.splice(idx, 1);
-		}
-	}
-
-	function addTaildrivePreset(idx: number) {
-		const grant = currentGrants()[idx];
+	function removeFromGrant(grantIdx: number, field: keyof PolicyGrant, item: string) {
+		const list = currentGrants();
+		const grant = list[grantIdx];
 		if (grant === undefined) {
 			return;
 		}
-		if (grant.app === undefined) {
-			grant.app = {};
+		const items = (grant[field] as string[]) ?? [];
+		const newItems = items.filter((v) => v !== item);
+		const updatedGrant = {
+			...grant,
+			[field]: newItems,
+		};
+		const next = [...list];
+		next[grantIdx] = updatedGrant;
+		updateGrants(next);
+	}
+
+	function addTaildrivePreset(idx: number) {
+		const list = currentGrants();
+		const grant = list[idx];
+		if (grant === undefined) {
+			return;
 		}
-		grant.app['tailscale.com/cap/drive'] = [{ shares: ['*'] }, { access: ['*'] }];
+		const updatedGrant = {
+			...grant,
+			app: {
+				...(grant.app ?? {}),
+				'tailscale.com/cap/drive': [{ shares: ['*'] }, { access: ['*'] }],
+			},
+		};
+		const next = [...list];
+		next[idx] = updatedGrant;
 		capabilityForms[idx] = [
 			{
 				id: `cap-${capabilityRowCounter++}`,
@@ -130,7 +138,7 @@
 				value: JSON.stringify([{ shares: ['*'] }, { access: ['*'] }], null, 2),
 			},
 		];
-		updateGrants([...currentGrants()]);
+		updateGrants(next);
 		toastSuccess('Applied Taildrive app preset', ToastStore);
 	}
 
@@ -147,8 +155,7 @@
 
 	function addCapabilityRow(idx: number) {
 		const rows = capabilityForms[idx] ?? [];
-		rows.push({ id: `cap-${capabilityRowCounter++}`, key: '', value: '[]' });
-		capabilityForms[idx] = rows;
+		capabilityForms[idx] = [...rows, { id: `cap-${capabilityRowCounter++}`, key: '', value: '[]' }];
 	}
 
 	function removeCapabilityRow(idx: number, id: string) {
@@ -157,7 +164,8 @@
 	}
 
 	function applyCapabilityForm(idx: number) {
-		const grant = currentGrants()[idx];
+		const list = currentGrants();
+		const grant = list[idx];
 		if (grant === undefined) {
 			return;
 		}
@@ -178,8 +186,13 @@
 				}
 				normalised[key] = value;
 			}
-			grant.app = Object.keys(normalised).length > 0 ? normalised : undefined;
-			updateGrants([...currentGrants()]);
+			const updatedGrant = {
+				...grant,
+				app: Object.keys(normalised).length > 0 ? normalised : undefined,
+			};
+			const next = [...list];
+			next[idx] = updatedGrant;
+			updateGrants(next);
 			toastSuccess('Updated grant app capabilities', ToastStore);
 		} catch (err) {
 			if (err instanceof Error) {
@@ -190,15 +203,21 @@
 	}
 
 	function validateVia(idx: number) {
-		const grant = currentGrants()[idx];
+		const list = currentGrants();
+		const grant = list[idx];
 		if (grant?.via === undefined) {
 			return;
 		}
 		const invalid = grant.via.filter((item) => !item.startsWith('tag:'));
 		if (invalid.length > 0) {
 			toastError('Via restrictions only support tag selectors (tag:...)', ToastStore);
-			grant.via = grant.via.filter((item) => item.startsWith('tag:'));
-			updateGrants([...currentGrants()]);
+			const updatedGrant = {
+				...grant,
+				via: grant.via.filter((item) => item.startsWith('tag:')),
+			};
+			const next = [...list];
+			next[idx] = updatedGrant;
+			updateGrants(next);
 		}
 	}
 </script>
@@ -231,7 +250,7 @@
 						items={grant.src}
 						options={principalOptions}
 						placeholder="Select source selectors"
-						onItemClick={(item) => removeItem(grant.src, item)}
+						onItemClick={(item) => removeFromGrant(idx, 'src', item)}
 					/>
 				</div>
 				<div>
@@ -241,7 +260,7 @@
 						items={grant.dst}
 						options={principalOptions}
 						placeholder="Select destination selectors"
-						onItemClick={(item) => removeItem(grant.dst, item)}
+						onItemClick={(item) => removeFromGrant(idx, 'dst', item)}
 					/>
 				</div>
 				<div>
@@ -250,7 +269,7 @@
 						id={`grant-ip-${idx}`}
 						items={grant.ip ?? []}
 						placeholder="Add CIDR or IP"
-						onItemClick={(item) => removeItem(grant.ip ?? [], item)}
+						onItemClick={(item) => removeFromGrant(idx, 'ip', item)}
 					/>
 				</div>
 				<div>
@@ -259,7 +278,7 @@
 						id={`grant-posture-${idx}`}
 						items={grant.srcPosture ?? []}
 						placeholder="Add posture selector"
-						onItemClick={(item) => removeItem(grant.srcPosture ?? [], item)}
+						onItemClick={(item) => removeFromGrant(idx, 'srcPosture', item)}
 					/>
 				</div>
 				<div class="lg:col-span-2">
@@ -272,18 +291,18 @@
 						items={grant.via ?? []}
 						options={viaTagOptions}
 						placeholder="Select tag:... selectors"
-						onItemClick={(item) => removeItem(grant.via ?? [], item)}
+						onItemClick={(item) => removeFromGrant(idx, 'via', item)}
 					/>
 					<p class="mt-1 text-xs opacity-80">Hint: via currently supports tag selectors only (for example `tag:relay`).</p>
 				</div>
 				<div class="lg:col-span-2" data-testid={`grant-app-editor-${idx}`}>
 					<div class="mb-2 flex items-center justify-between">
-						<label class="label">app capabilities (optional)</label>
+						<label class="label" for={`grant-app-editor-cap-list-${idx}`}>app capabilities (optional)</label>
 						<button class="btn btn-xs rounded-md variant-soft-secondary" onclick={() => addTaildrivePreset(idx)} data-testid={`grant-taildrive-preset-${idx}`}>
 							Apply Taildrive preset
 						</button>
 					</div>
-					<div class="space-y-3">
+					<div class="space-y-3" id={`grant-app-editor-cap-list-${idx}`}>
 						{#each (capabilityForms[idx] ?? []) as row (row.id)}
 							<div class="rounded-md border border-surface-300-700-token p-3">
 								<div class="mb-2 grid grid-cols-12 gap-2 items-end">
