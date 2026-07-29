@@ -429,18 +429,7 @@ let preAuthKeys;
 let apiKeys;
 let userNodeMap;
 
-function resetState() {
-  _nodeId = 0;
-  users = structuredClone(baseUsers);
-  nodes = createNodes(users);
-  preAuthKeys = createPreAuthKeys(users);
-  apiKeys = createApiKeys();
-  userNodeMap = buildUserNodeMap(nodes, users);
-}
-
-resetState();
-
-const policy = JSON.stringify({
+const defaultPolicy = {
   groups: {
     'group:admin':   ['alice', 'bob'],
     'group:dev':     ['carol', 'dave', 'eve', 'frank.garcia', 'grace'],
@@ -476,7 +465,230 @@ const policy = JSON.stringify({
     { action: 'accept', src: ['group:admin'], dst: ['*'], users: ['root', 'headscale-user'] },
     { action: 'accept', src: ['group:dev'],   dst: ['tag:server'], users: ['deploy'] },
   ],
-});
+  grants: [
+    // === Built-in Tailscale capabilities examples (from documentation) ===
+
+    // Taildrive: developers can read/write projects and docs, read-only archives
+    {
+      src: ['group:dev'],
+      dst: ['tag:server'],
+      app: {
+        'tailscale.com/cap/drive': [
+          { shares: ['projects', 'documentation'], access: 'rw' },
+          { shares: ['archives'], access: 'ro' },
+        ],
+      },
+    },
+
+    // Taildrive: ops team full access to all shares
+    {
+      src: ['group:ops'],
+      dst: ['tag:backup'],
+      app: {
+        'tailscale.com/cap/drive': [
+          { shares: ['*'], access: 'rw' },
+        ],
+      },
+    },
+
+    // Kubernetes: ops with recording and impersonation
+    {
+      src: ['group:ops'],
+      dst: ['tag:k8s'],
+      app: {
+        'tailscale.com/cap/kubernetes': [
+          {
+            recorders: ['tag:monitoring'],
+            enforceRecorder: true,
+            impersonate: {
+              groups: ['system:masters'],
+            },
+          },
+        ],
+      },
+    },
+
+    // Secrets: developers get-only access to dev secrets
+    {
+      src: ['group:dev'],
+      dst: ['tag:server'],
+      app: {
+        'tailscale.com/cap/secrets': [
+          { action: ['get', 'info'], secret: ['dev/*'] },
+        ],
+      },
+    },
+
+    // Secrets: ops full access to prod secrets
+    {
+      src: ['group:ops'],
+      dst: ['tag:server'],
+      app: {
+        'tailscale.com/cap/secrets': [
+          { action: ['get', 'put', 'info', 'delete'], secret: ['prod/*', 'keys/*'] },
+        ],
+      },
+    },
+
+    // TailSQL: developers can query main and self
+    {
+      src: ['group:dev'],
+      dst: ['tag:database'],
+      app: {
+        'tailscale.com/cap/tailsql': [
+          { src: ['main', 'self'] },
+        ],
+      },
+    },
+
+    // Golink: admins are golink admins
+    {
+      src: ['group:admin'],
+      dst: ['tag:server'],
+      app: {
+        'tailscale.com/cap/golink': [
+          { admin: true },
+        ],
+      },
+    },
+
+    // === Edge cases and test scenarios ===
+
+    // Multiple capabilities in one grant
+    {
+      src: ['alice'],
+      dst: ['tag:backup'],
+      app: {
+        'tailscale.com/cap/drive': [
+          { shares: ['*'], access: 'rw' },
+        ],
+        'tailscale.com/cap/secrets': [
+          { action: ['get', 'info'], secret: ['backup/*'] },
+        ],
+      },
+    },
+
+    // Custom capability domain
+    {
+      src: ['group:dev'],
+      dst: ['tag:server'],
+      app: {
+        'mycompany.com/cap/analytics': [
+          { datasets: ['production', 'staging'], query: 'read' },
+        ],
+      },
+    },
+
+    // Grant with only IP field (no app) - valid per docs
+    {
+      src: ['bob'],
+      dst: ['tag:printer'],
+      ip: ['10.0.0.0/8'],
+    },
+
+    // Complex Kubernetes with multiple role impersonations
+    {
+      src: ['heidi'],
+      dst: ['tag:k8s'],
+      app: {
+        'tailscale.com/cap/kubernetes': [
+          {
+            recorders: ['tag:monitoring'],
+            enforceRecorder: false,
+            impersonate: {
+              users: ['service-account', 'ci-agent'],
+              groups: ['developers', 'system:authenticated'],
+            },
+          },
+        ],
+      },
+    },
+
+    // Taildrive with wildcard shares and read-only
+    {
+      src: ['group:dev'],
+      dst: ['tag:backup'],
+      app: {
+        'tailscale.com/cap/drive': [
+          { shares: ['*'], access: 'ro' },
+        ],
+      },
+    },
+
+    // Secrets with complex path patterns and multiple action sets
+    {
+      src: ['carol'],
+      dst: ['tag:server'],
+      app: {
+        'tailscale.com/cap/secrets': [
+          {
+            action: ['get', 'put', 'info'],
+            secret: ['dev/api-keys/*', 'dev/db/*/password', 'staging/*/tokens'],
+          },
+        ],
+      },
+    },
+
+    // Grant with via restrictions (relay-only)
+    {
+      src: ['group:dev'],
+      dst: ['tag:server'],
+      via: ['tag:relay'],
+      app: {
+        'tailscale.com/cap/drive': [
+          { shares: ['dev'], access: 'rw' },
+        ],
+      },
+    },
+
+    // Custom capability with complex nested config
+    {
+      src: ['dave'],
+      dst: ['tag:server'],
+      app: {
+        'acmecorp.io/cap/billing-api': [
+          {
+            endpoints: ['/api/v1/invoices', '/api/v1/subscriptions'],
+            rateLimit: '1000/min',
+            requireMFA: true,
+          },
+        ],
+      },
+    },
+
+    // Posture-gated grant (security context example)
+    {
+      src: ['group:ops'],
+      dst: ['tag:database'],
+      srcPosture: ['endpoint-security-managed', 'os:darwin', 'os:linux'],
+      app: {
+        'tailscale.com/cap/secrets': [
+          { action: ['get', 'put', 'delete'], secret: ['prod/database/*'] },
+        ],
+      },
+    },
+
+    // Empty grant with just src/dst (no app, minimal)
+    {
+      src: ['ivan'],
+      dst: ['tag:monitoring'],
+    },
+  ],
+};
+
+let policyDocumentText = JSON.stringify(defaultPolicy);
+
+function resetState() {
+  _nodeId = 0;
+  users = structuredClone(baseUsers);
+  nodes = createNodes(users);
+  preAuthKeys = createPreAuthKeys(users);
+  apiKeys = createApiKeys();
+  userNodeMap = buildUserNodeMap(nodes, users);
+  policyDocumentText = JSON.stringify(defaultPolicy);
+}
+
+resetState();
 
 const versionInfo = {
   version: 'v0.28.0',
@@ -569,7 +781,7 @@ const server = createServer((req, res) => {
     }
     if (path === '/api/v1/preauthkey') return json(res, { preAuthKeys });
     if (path === '/api/v1/apikey')     return json(res, { apiKeys });
-    if (path === '/api/v1/policy')     return json(res, { policy, updatedAt: new Date().toISOString() });
+    if (path === '/api/v1/policy')     return json(res, { policy: policyDocumentText, updatedAt: new Date().toISOString() });
     if (path === '/api/v1/health')     return json(res, healthInfo);
 
     // Single node GET: /api/v1/node/{id}
@@ -653,7 +865,24 @@ const server = createServer((req, res) => {
 
   // ── PUT endpoints ───────────────────────────────────────────────────────
   if (method === 'PUT') {
-    if (path === '/api/v1/policy') return json(res, { policy, updatedAt: new Date().toISOString() });
+    if (path === '/api/v1/policy') {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          if (typeof parsed.policy === 'string') {
+            policyDocumentText = parsed.policy;
+          }
+        } catch {
+          // Keep existing policy content when payload is invalid.
+        }
+        return json(res, { policy: policyDocumentText, updatedAt: new Date().toISOString() });
+      });
+      return;
+    }
   }
 
   // ── DELETE endpoints ────────────────────────────────────────────────────
